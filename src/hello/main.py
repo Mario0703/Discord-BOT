@@ -1,4 +1,4 @@
-from .modules.hello import hello
+from . import hello
 
 
 def main():

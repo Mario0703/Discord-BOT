@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "package-name"
+name = "hello"
 version = "0.1.0"
 description = "A Discord bot built with Pycord and the OpenAI SDK."
 readme = "README.md"
