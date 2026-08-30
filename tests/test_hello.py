@@ -1,4 +1,4 @@
-from hello.modules.hello import hello
+from bot.modules.test.hello import hello
 
 
 def test_hello(capsys):

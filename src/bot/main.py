@@ -1,8 +1,6 @@
-from . import hello
 
 
 def main():
-    hello()
     print("Application started")
 
 
