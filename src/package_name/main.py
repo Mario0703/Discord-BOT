@@ -1,9 +1,9 @@
-from modules.hello import hello
+from .modules.hello import hello
+
 
 def main():
     hello()
     print("Application started")
-    
 
 
 if __name__ == "__main__":
