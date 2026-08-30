@@ -27,9 +27,18 @@ async def hello(ctx: discord.ApplicationContext):
     description="Ask luna some stuff",
     guild_ids=[770744107559682108],
 )
-async def askOpenAI(ctx: discord.ApplicationContext):
-    question = AskOpenAI().ask_openai()
-    await ctx.respond(question)
+async def askOpenAI(
+    ctx: discord.ApplicationContext,
+    question: str,
+):
+    await ctx.defer()
+
+    answer = await asyncio.to_thread(
+        AskOpenAI().ask_openai,
+        question,
+    )
+
+    await ctx.followup.send(answer[:2000])
 
 
 @bot.slash_command(

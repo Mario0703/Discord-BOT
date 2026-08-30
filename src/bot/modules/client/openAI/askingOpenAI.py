@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime
 
 from openai import OpenAI
 from ..API.isThereSuchDeal import Deals
@@ -31,28 +32,21 @@ class AskOpenAI:
             deals_for_ai.append(
                 {
                     "title": item.get("title"),
-                    "type": item.get("type"),
-                    "shop": deal.get("shop", {}).get("name"),
+                    "store": deal.get("shop", {}).get("name"),
                     "current_price": deal.get("price", {}).get("amount"),
                     "regular_price": deal.get("regular", {}).get("amount"),
                     "currency": deal.get("price", {}).get("currency"),
                     "discount_percent": deal.get("cut"),
-                    "store_low": (
-                        deal["storeLow"]["amount"] if deal.get("storeLow") else None
-                    ),
-                    "history_low": (
-                        deal["historyLow"]["amount"] if deal.get("historyLow") else None
-                    ),
-                    "history_low_3m": (
-                        deal["historyLow_3m"]["amount"]
-                        if deal.get("historyLow_3m")
-                        else None
-                    ),
-                    "deal_flag": deal.get("flag"),
                     "platforms": [
                         platform["name"] for platform in deal.get("platforms", [])
                     ],
-                    "expiry": deal.get("expiry"),
+                    "expires_at": (
+                        datetime.fromisoformat(deal["expiry"]).strftime(
+                            "%d %B %Y at %H:%M"
+                        )
+                        if deal.get("expiry")
+                        else None
+                    ),
                     "url": deal.get("url"),
                 }
             )
@@ -60,26 +54,23 @@ class AskOpenAI:
         prompt = """
     Find the hottest Steam game deals from the JSON data below.
 
+    Select no more than 3 deals. Rank them from hottest to least hot.
+
     Prioritize:
     - discount_percent >= 80
     - current_price at or below a historical low
     - deals that have not expired
     - full games over DLC and packages
-    - deal_flag "H" and free games
-
-    For each selected deal, explain:
-    - what the game is about
-    - whether it is fun with friends
-    - who it is suitable for
-    - why the user might enjoy it
-    - why the deal is attractive
+    - free games and unusually large discounts
 
     Return:
-    title, type, current price, regular price, discount,
-    platforms, expiry, URL, and a short recommendation.
+    title, current price, regular price, discount, platforms,
+    store, expires_at (when the deal is no longer valid),
+    and URL.
 
-    Do not recommend expired deals. If information is missing, write "Unknown".
-    Do not invent specific game details that are not present in the data.
+    Do not include expired deals. If a deal field is missing, write "Unknown".
+    Only report information present in the supplied data; do not infer game
+    descriptions, genres, gameplay, or multiplayer support.
 
     Deal data:
     """
