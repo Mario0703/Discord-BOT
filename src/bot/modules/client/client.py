@@ -16,4 +16,9 @@ async def hello(ctx: discord.ApplicationContext):
     await ctx.respond("Hey!")
 
 
-bot.run(os.getenv("TOKEN"))  # run the bot with the token
+
+def run_bot():
+    bot.run(os.getenv("TOKEN"))
+
+if __name__ == "__main__":
+    run_bot()
