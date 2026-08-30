@@ -1,14 +1,14 @@
-from unittest.mock import Mock, patch
-from bot.modules.client.openAI.res import ask_openai
+from unittest.mock import Mock
+
+from bot.modules.client.openAI.askingOpenAI import AskOpenAI
 
 
-@patch("bot.modules.client.openAI.res.OpenAI")
-def test_ask_openai(mock_openai):
-    mock_client = mock_openai.return_value
+def test_ask_openai():
+    mock_client = Mock()
     mock_response = Mock(output_text="Hello from the test")
     mock_client.responses.create.return_value = mock_response
 
-    result = ask_openai("Say hello")
+    result = AskOpenAI(client=mock_client).ask_openai("Say hello")
 
     assert result == "Hello from the test"
     mock_client.responses.create.assert_called_once_with(
