@@ -12,7 +12,7 @@ def test_api_request(mock_get):
     }
     mock_get.return_value = mock_response
 
-    result = Deals(country="DK").get_steam_deals("test-api-key")
+    result = Deals().get_steam_deals("test-api-key")
 
     assert result == {
         "title": "Example Game",
