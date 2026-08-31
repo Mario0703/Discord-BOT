@@ -33,9 +33,7 @@ def register_commands(
         deals_text = await asyncio.to_thread(top_deals_service.get_top_steam_deals)
 
         for start in range(0, len(deals_text), MAX_MESSAGE_LENGTH):
-            await ctx.followup.send(
-                deals_text[start : start + MAX_MESSAGE_LENGTH]
-            )
+            await ctx.followup.send(deals_text[start : start + MAX_MESSAGE_LENGTH])
 
     general = bot.create_group(
         "general",
@@ -46,6 +44,19 @@ def register_commands(
     @general.command(name="hello", description="Say hello")
     async def hello(ctx: discord.ApplicationContext):
         await ctx.respond("Hi")
+
+    @general.command(
+        name="Reminder", description="I will remind you to check something"
+    )
+    async def reminder(ctx: discord.ApplicationContext, seconds: int, message: str):
+        await ctx.respond(f"Okay, I’ll remind you in {seconds} seconds.")
+
+        await asyncio.sleep(seconds)
+
+        try:
+            await ctx.author.send(f"Reminder: {message}")
+        except discord.Forbidden:
+            await ctx.respond(f"{ctx.author.mention}, I couldn't DM you.")
 
     @bot.event
     async def on_ready():
