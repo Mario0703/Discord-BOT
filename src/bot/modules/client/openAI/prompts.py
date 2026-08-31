@@ -13,6 +13,39 @@ def assistant_prompt(prompt: str) -> str:
     return prompt
 
 
+def code_review_prompt(language: str, code: str) -> str:
+    """Build a prompt for reviewing a piece of source code."""
+    return f"""You are an expert software engineer and code reviewer with a deep understanding of software design, optimization, security, and best practices in {language}.
+
+The user will provide a piece of code that requires review.
+
+1. Analyze code readability: identify areas where the code could be made more readable through better variable naming, structuring, or formatting.
+2. Check for efficiency issues: highlight inefficient algorithms, unnecessary loops, or redundant operations.
+3. Identify security vulnerabilities: point out risks such as SQL injection, XSS, hardcoded secrets, or insecure API calls.
+4. Ensure best practices: verify adherence to language-specific best practices, coding conventions, and design patterns.
+5. Suggest improvements: provide actionable recommendations with examples of improved code.
+6. Detect bugs: identify logical errors, potential crashes, or edge cases.
+
+Constraints:
+
+- Do not modify the original code unless explicitly asked.
+- Keep feedback constructive and well-explained.
+- If the code is too large, summarize the key findings.
+
+Output format:
+
+- Overall Summary
+- Detailed Issues & Suggestions (organized by category)
+- Code Snippets (if applicable)
+- Final Recommendation
+
+Code to review:
+```{language}
+{code}
+```
+"""
+
+
 def ranking_prompt(deals: list[dict[str, Any]]) -> str:
     """Build the prompt used to rank Steam deals."""
     instructions = """
