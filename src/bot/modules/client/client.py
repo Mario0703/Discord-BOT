@@ -5,6 +5,7 @@ import discord
 from dotenv import load_dotenv
 
 from .openAI.askingOpenAI import AskOpenAI
+from .openAI.topDeals import TopDealsService
 from bot.tools.gamesDeal import GamesDealTool
 
 load_dotenv()  # load all the variables from the env file
@@ -12,12 +13,15 @@ bot = discord.Bot()
 server_id = 770744107559682108
 max_messages_upperbond = 2000
 
+game_deals_tool = GamesDealTool()
+
 # Composition root: register every tool the assistant is allowed to use here.
 openai_service = AskOpenAI(
     tools=[
-        GamesDealTool(),
+        game_deals_tool,
     ]
 )
+top_deals_service = TopDealsService(openai_service.client, game_deals_tool)
 
 
 # Bot lifecycle events
@@ -54,7 +58,7 @@ async def ask_openai(
 async def deals(ctx: discord.ApplicationContext):
     await ctx.defer()
 
-    deals_text = await asyncio.to_thread(openai_service.ask_openai_about_good_deals)
+    deals_text = await asyncio.to_thread(top_deals_service.get_top_steam_deals)
 
     for start in range(0, len(deals_text), max_messages_upperbond):
         await ctx.followup.send(deals_text[start : start + max_messages_upperbond])
