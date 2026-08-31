@@ -1,9 +1,8 @@
-import asyncio
 import json
 from collections.abc import Iterable
 from typing import Any
 
-from openai import OpenAI
+from openai import AsyncOpenAI
 from ..API.api_client import ApiClient
 from bot.tools.tool import tool as Tool
 from .prompts import assistant_prompt
@@ -12,9 +11,9 @@ from .prompts import assistant_prompt
 class AskOpenAI(ApiClient):
     API_KEY_ENV_VAR = "API_KEY"
 
-    def __init__(self, tools: Iterable[Tool] = (), client: OpenAI | None = None):
+    def __init__(self, tools: Iterable[Tool] = (), client: AsyncOpenAI | None = None):
         self.client = (
-            client if client is not None else OpenAI(api_key=self.get_api_key())
+            client if client is not None else AsyncOpenAI(api_key=self.get_api_key())
         )
         registered_tools = tuple(tools)
         self._tools_by_name = {tool.name: tool for tool in registered_tools}
@@ -26,14 +25,14 @@ class AskOpenAI(ApiClient):
             tool.definition() for tool in registered_tools
         ]
 
-    def ask_openai(self, prompt: str) -> str:
+    async def ask_openai(self, prompt: str) -> str:
         request = {
             "model": "gpt-5.6-luna",
             "input": assistant_prompt(prompt),
         }
         if self._tool_definitions:
             request["tools"] = self._tool_definitions
-        response = self.client.responses.create(**request)
+        response = await self.client.responses.create(**request)
 
         while True:
             tool_outputs = []
@@ -55,7 +54,7 @@ class AskOpenAI(ApiClient):
 
                 try:
                     arguments = json.loads(item.arguments)
-                    result = asyncio.run(tool.execute(**arguments))
+                    result = await tool.execute(**arguments)
                 except Exception as error:
                     result = {"error": str(error)}
 
@@ -72,7 +71,7 @@ class AskOpenAI(ApiClient):
                 return response.output_text
 
             # Send results back for the exact preceding response.
-            response = self.client.responses.create(
+            response = await self.client.responses.create(
                 model="gpt-5.6-luna",
                 previous_response_id=response.id,
                 input=tool_outputs,

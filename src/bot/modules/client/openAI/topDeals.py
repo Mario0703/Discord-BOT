@@ -1,8 +1,7 @@
-import asyncio
 from datetime import datetime
 from typing import Any
 
-from openai import OpenAI
+from openai import AsyncOpenAI
 
 from bot.tools.gamesDeal import GamesDealTool
 from .prompts import ranking_prompt
@@ -11,25 +10,23 @@ from .prompts import ranking_prompt
 class TopDealsService:
     """Fetch and present the three strongest current Steam deals."""
 
-    def __init__(self, client: OpenAI, deals_tool: GamesDealTool):
+    def __init__(self, client: AsyncOpenAI, deals_tool: GamesDealTool):
         self.client = client
         self.deals_tool = deals_tool
 
-    def get_top_steam_deals(
+    async def get_top_steam_deals(
         self,
         country: str = "DK",
         minimum_discount: int = 80,
     ) -> str:
-        raw_deals = asyncio.run(
-            self.deals_tool.execute(
-                country=country,
-                shop=61,
-                discount_min=minimum_discount,
-                discount_max=100,
-            )
+        raw_deals = await self.deals_tool.execute(
+            country=country,
+            shop=61,
+            discount_min=minimum_discount,
+            discount_max=100,
         )
 
-        response = self.client.responses.create(
+        response = await self.client.responses.create(
             model="gpt-5.6-luna",
             input=ranking_prompt(self._normalise_deals(raw_deals)),
         )

@@ -11,21 +11,19 @@ MAX_MESSAGE_LENGTH = 2_000
 
 
 def format_code_review(review: str) -> str:
-    """Normalize common formatting issues in model-generated Markdown."""
-    # Some responses contain escaped newlines instead of actual newlines.
     review = review.replace("\\r\\n", "\n").replace("\\n", "\n")
     review = review.replace("```python ", "```python\n")
     review = review.replace("```py ", "```py\n")
     return review.strip()
 
 
-def register_commands(
+def register_pycord_command(
     bot: discord.Bot,
     openai_service: AskOpenAI,
     top_deals_service: TopDealsService,
     code_review_service: CodeReview,
 ) -> None:
-    """Register grouped slash commands and bot events."""
+
     assistant = bot.create_group(
         "assistant",
         "AI assistant commands",
@@ -35,13 +33,13 @@ def register_commands(
     @assistant.command(name="ask", description="Ask Luna a question")
     async def ask_openai(ctx: discord.ApplicationContext, question: str):
         await ctx.defer()
-        answer = await asyncio.to_thread(openai_service.ask_openai, question)
+        answer = await openai_service.ask_openai(question)
         await ctx.followup.send(answer[:MAX_MESSAGE_LENGTH])
 
     @assistant.command(name="deals", description="Get the top Steam deals")
     async def deals(ctx: discord.ApplicationContext):
         await ctx.defer()
-        deals_text = await asyncio.to_thread(top_deals_service.get_top_steam_deals)
+        deals_text = await top_deals_service.get_top_steam_deals()
 
         for start in range(0, len(deals_text), MAX_MESSAGE_LENGTH):
             await ctx.followup.send(deals_text[start : start + MAX_MESSAGE_LENGTH])
@@ -80,9 +78,7 @@ def register_commands(
         code: str,
     ):
         await ctx.defer()
-        review = await asyncio.to_thread(
-            code_review_service.do_code_review, language, code
-        )
+        review = await code_review_service.do_code_review(language, code)
         review = format_code_review(review)
 
         for start in range(0, len(review), MAX_MESSAGE_LENGTH):
@@ -90,7 +86,7 @@ def register_commands(
                 review[start : start + MAX_MESSAGE_LENGTH],
                 allowed_mentions=discord.AllowedMentions.none(),
             )
-    
+
     @bot.event
     async def on_ready():
         print(f"{bot.user} is ready and online!")

@@ -2,7 +2,7 @@ import os
 
 from dotenv import load_dotenv
 
-from bot.main import create_bot
+from bot.main import create_discord_bot
 
 
 def run_bot():
@@ -11,7 +11,7 @@ def run_bot():
     if not token:
         raise RuntimeError("Missing required environment variable: TOKEN")
 
-    create_bot().run(token)
+    create_discord_bot().run(token)
 
 
 if __name__ == "__main__":

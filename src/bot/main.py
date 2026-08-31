@@ -1,6 +1,6 @@
 import discord
 
-from .commands import register_commands
+from .commands import register_pycord_command
 from .modules.client.openAI.askingOpenAI import AskOpenAI
 from .modules.client.openAI.codeReview import CodeReview
 from .modules.client.openAI.topDeals import TopDealsService
@@ -8,8 +8,7 @@ from .tools.gamesDeal import GamesDealTool
 from .tools.weatherTool import WeatherTool
 
 
-def create_bot() -> discord.Bot:
-    """Create and configure the Discord bot."""
+def create_discord_bot() -> discord.Bot:
     bot = discord.Bot()
 
     game_deals_tool = GamesDealTool()
@@ -18,5 +17,5 @@ def create_bot() -> discord.Bot:
     top_deals_service = TopDealsService(openai_service.client, game_deals_tool)
     code_review_service = CodeReview(openai_service.client)
 
-    register_commands(bot, openai_service, top_deals_service, code_review_service)
+    register_pycord_command(bot, openai_service, top_deals_service, code_review_service)
     return bot
