@@ -1,9 +1,48 @@
+import json
+
 import requests
 from collections.abc import Sequence
 
 
 class Deals:
     BASE_URL = "https://api.isthereanydeal.com"
+
+    # ISO 3166-1 alpha-2 country codes used by IsThereAnyDeal.
+    AREA_CODES = {
+        "AT": "Austria",
+        "AU": "Australia",
+        "BE": "Belgium",
+        "CA": "Canada",
+        "CH": "Switzerland",
+        "CZ": "Czechia",
+        "DE": "Germany",
+        "DK": "Denmark",
+        "ES": "Spain",
+        "FI": "Finland",
+        "FR": "France",
+        "GB": "United Kingdom",
+        "IE": "Ireland",
+        "IT": "Italy",
+        "JP": "Japan",
+        "NL": "Netherlands",
+        "NO": "Norway",
+        "NZ": "New Zealand",
+        "PL": "Poland",
+        "PT": "Portugal",
+        "SE": "Sweden",
+        "TR": "Türkiye",
+        "US": "United States",
+    }
+
+    # Shop IDs documented by IsThereAnyDeal or used in this project.
+    SHOP_TITLES = {
+        2: "AllYouPlay",
+        3: "Amazon",
+        13: "DLGamer",
+        19: "2game",
+        35: "GOG",
+        61: "Steam",
+    }
 
     def __init__(self, country: str, shop: str | int, discount_range: Sequence[int]):
         """Create a deals client with the filters required by the API."""
@@ -29,6 +68,10 @@ class Deals:
         self.shop = str(shop)
         self.discount_range = (minimum, maximum)
 
+        # Instance-level maps, available to callers as requested.
+        self.shops = self.SHOP_TITLES.copy()
+        self.areaCode = self.AREA_CODES.copy()
+
     def get_steam_deals(self, api_key):
         response = requests.get(
             f"{self.BASE_URL}/deals/v2",
@@ -36,7 +79,14 @@ class Deals:
             params={
                 "country": self.country,
                 "shops": self.shop,
-                "cut": f"{self.discount_range[0]}..{self.discount_range[1]}",
+                "filter": json.dumps(
+                    {
+                        "cut": {
+                            "min": self.discount_range[0],
+                            "max": self.discount_range[1],
+                        }
+                    }
+                ),
                 "offset": 0,
                 "limit": 20,
                 "sort": "-cut",

@@ -1,10 +1,12 @@
 import json
+from json import tool
 import os
 from datetime import datetime
 
 from openai import OpenAI
 from ..API.isThereSuchDeal import Deals
-
+from bot.tools.gamesDeal import GamesDealTool
+import asyncio
 
 class AskOpenAI:
 
@@ -12,13 +14,60 @@ class AskOpenAI:
         self.client = (
             client if client is not None else OpenAI(api_key=os.getenv("API_KEY"))
         )
+        self.game_deals_tool = GamesDealTool()
+
 
     def ask_openai(self, prompt: str) -> str:
+        tools = [self.game_deals_tool.definition()]
+
         response = self.client.responses.create(
             model="gpt-5.6-luna",
             input=prompt,
+            tools=tools,
         )
-        return response.output_text
+
+        while True:
+            tool_outputs = []
+
+            for item in response.output:
+                if item.type != "function_call":
+                    continue
+
+                if item.name != self.game_deals_tool.name:
+                    tool_outputs.append(
+                        {
+                            "type": "function_call_output",
+                            "call_id": item.call_id,
+                            "output": json.dumps({"error": f"Unknown tool: {item.name}"}),
+                        }
+                    )
+                    continue
+
+                try:
+                    arguments = json.loads(item.arguments)
+                    result = asyncio.run(self.game_deals_tool.execute(**arguments))
+                except Exception as error:
+                    result = {"error": str(error)}
+
+                tool_outputs.append(
+                    {
+                        "type": "function_call_output",
+                        "call_id": item.call_id,
+                        "output": json.dumps(result),
+                    }
+                )
+
+            # No tool requests: the model produced its final answer.
+            if not tool_outputs:
+                return response.output_text
+
+            # Send results back for the exact preceding response.
+            response = self.client.responses.create(
+                model="gpt-5.6-luna",
+                previous_response_id=response.id,
+                input=tool_outputs,
+                tools=tools,
+            )
 
     def ask_openai_about_good_deals(self):
         deals_client = Deals(country="DK", shop="61", discount_range=(80, 100))
