@@ -6,12 +6,13 @@ from typing import Any
 from openai import OpenAI
 from ..API.api_client import ApiClient
 from bot.tools.tool import tool as Tool
+from .prompts import assistant_prompt
 
 
 class AskOpenAI(ApiClient):
     API_KEY_ENV_VAR = "API_KEY"
 
-    def __init__(self, tools: Iterable[Tool], client: OpenAI | None = None):
+    def __init__(self, tools: Iterable[Tool] = (), client: OpenAI | None = None):
         self.client = (
             client if client is not None else OpenAI(api_key=self.get_api_key())
         )
@@ -26,11 +27,13 @@ class AskOpenAI(ApiClient):
         ]
 
     def ask_openai(self, prompt: str) -> str:
-        response = self.client.responses.create(
-            model="gpt-5.6-luna",
-            input=prompt,
-            tools=self._tool_definitions,
-        )
+        request = {
+            "model": "gpt-5.6-luna",
+            "input": assistant_prompt(prompt),
+        }
+        if self._tool_definitions:
+            request["tools"] = self._tool_definitions
+        response = self.client.responses.create(**request)
 
         while True:
             tool_outputs = []

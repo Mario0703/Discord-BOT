@@ -3,16 +3,27 @@ import asyncio
 import discord
 
 from bot.modules.client.openAI.askingOpenAI import AskOpenAI
+from bot.modules.client.openAI.codeReview import CodeReview
 from bot.modules.client.openAI.topDeals import TopDealsService
 
 GUILD_IDS = [770744107559682108]
 MAX_MESSAGE_LENGTH = 2_000
 
 
+def format_code_review(review: str) -> str:
+    """Normalize common formatting issues in model-generated Markdown."""
+    # Some responses contain escaped newlines instead of actual newlines.
+    review = review.replace("\\r\\n", "\n").replace("\\n", "\n")
+    review = review.replace("```python ", "```python\n")
+    review = review.replace("```py ", "```py\n")
+    return review.strip()
+
+
 def register_commands(
     bot: discord.Bot,
     openai_service: AskOpenAI,
     top_deals_service: TopDealsService,
+    code_review_service: CodeReview,
 ) -> None:
     """Register grouped slash commands and bot events."""
     assistant = bot.create_group(
@@ -46,7 +57,7 @@ def register_commands(
         await ctx.respond("Hi")
 
     @general.command(
-        name="Reminder", description="I will remind you to check something"
+        name="reminder", description="I will remind you to check something"
     )
     async def reminder(ctx: discord.ApplicationContext, seconds: int, message: str):
         await ctx.respond(f"Okay, I’ll remind you in {seconds} seconds.")
@@ -58,6 +69,28 @@ def register_commands(
         except discord.Forbidden:
             await ctx.respond(f"{ctx.author.mention}, I couldn't DM you.")
 
+    technical = bot.create_group(
+        "technical", "Tech related commands", guild_ids=GUILD_IDS
+    )
+
+    @technical.command(name="code_review", description="Review source code")
+    async def code_review(
+        ctx: discord.ApplicationContext,
+        language: str,
+        code: str,
+    ):
+        await ctx.defer()
+        review = await asyncio.to_thread(
+            code_review_service.do_code_review, language, code
+        )
+        review = format_code_review(review)
+
+        for start in range(0, len(review), MAX_MESSAGE_LENGTH):
+            await ctx.followup.send(
+                review[start : start + MAX_MESSAGE_LENGTH],
+                allowed_mentions=discord.AllowedMentions.none(),
+            )
+    
     @bot.event
     async def on_ready():
         print(f"{bot.user} is ready and online!")
