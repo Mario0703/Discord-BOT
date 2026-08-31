@@ -114,7 +114,7 @@ def register_pycord_command(
             )
             print("Content:", message.content)
 
-        summary = await summary_service.summarize(
+        summary = await summary_service.summerice_channel_history_start_to_end(
             selected_channel.name,
             start,
             end,

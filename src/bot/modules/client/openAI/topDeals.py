@@ -18,12 +18,14 @@ class TopDealsService:
         self,
         country: str = "DK",
         minimum_discount: int = 80,
+        maximum_discount: int = 80,
+        steam_store=61,
     ) -> str:
         raw_deals = await self.deals_tool.execute(
             country=country,
-            shop=61,
+            shop=steam_store,
             discount_min=minimum_discount,
-            discount_max=100,
+            discount_max=maximum_discount,
         )
 
         response = await self.client.responses.create(
@@ -63,4 +65,3 @@ class TopDealsService:
             )
 
         return deals_for_ai
-

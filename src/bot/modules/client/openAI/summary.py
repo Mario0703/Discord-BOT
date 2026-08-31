@@ -10,7 +10,7 @@ class SummaryOpenAI:
         self.client = client
         self.model = model
 
-    async def summarize(
+    async def summerice_channel_history_start_to_end(
         self,
         channel_name: str,
         start: str,
