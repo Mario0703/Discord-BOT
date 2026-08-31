@@ -9,7 +9,7 @@ from .api_client import ApiClient
 class OpenWeather(ApiClient):
     API_KEY_ENV_VAR = "OPENWEATHER_API_KEY"
     DIRECT_GEOCODING_ENDPOINT = "https://api.openweathermap.org/geo/1.0/direct"
-    CURRENT_WEATHER_ENDPOINT = "https://api.openweathermap.org/data/4.0/onecall/current"
+    CURRENT_WEATHER_ENDPOINT = "https://api.openweathermap.org/data/2.5/weather"
 
     def __init__(self, city_name: str, state_code: str, country_code: str):
         self.city_name = city_name
@@ -53,6 +53,7 @@ class OpenWeather(ApiClient):
             f"{self.CURRENT_WEATHER_ENDPOINT}"
             f"?lat={latitude}"
             f"&lon={longitude}"
+            f"&units=metric"
             f"&appid={quote(self.get_api_key(), safe='')}"
         )
         response = requests.get(weather_url, timeout=15)

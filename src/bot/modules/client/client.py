@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from .openAI.askingOpenAI import AskOpenAI
 from .openAI.topDeals import TopDealsService
 from bot.tools.gamesDeal import GamesDealTool
+from bot.tools.weatherTool import WeatherTool
 
 load_dotenv()  # load all the variables from the env file
 bot = discord.Bot()
@@ -14,11 +15,13 @@ server_id = 770744107559682108
 max_messages_upperbond = 2000
 
 game_deals_tool = GamesDealTool()
+weather_tool = WeatherTool()
 
 # Composition root: register every tool the assistant is allowed to use here.
 openai_service = AskOpenAI(
     tools=[
         game_deals_tool,
+        weather_tool,
     ]
 )
 top_deals_service = TopDealsService(openai_service.client, game_deals_tool)
