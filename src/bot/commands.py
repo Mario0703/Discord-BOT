@@ -10,6 +10,15 @@ GUILD_IDS = [770744107559682108]
 MAX_MESSAGE_LENGTH = 2_000
 
 
+def format_code_review(review: str) -> str:
+    """Normalize common formatting issues in model-generated Markdown."""
+    # Some responses contain escaped newlines instead of actual newlines.
+    review = review.replace("\\r\\n", "\n").replace("\\n", "\n")
+    review = review.replace("```python ", "```python\n")
+    review = review.replace("```py ", "```py\n")
+    return review.strip()
+
+
 def register_commands(
     bot: discord.Bot,
     openai_service: AskOpenAI,
@@ -74,9 +83,13 @@ def register_commands(
         review = await asyncio.to_thread(
             code_review_service.do_code_review, language, code
         )
+        review = format_code_review(review)
 
         for start in range(0, len(review), MAX_MESSAGE_LENGTH):
-            await ctx.followup.send(review[start : start + MAX_MESSAGE_LENGTH])
+            await ctx.followup.send(
+                review[start : start + MAX_MESSAGE_LENGTH],
+                allowed_mentions=discord.AllowedMentions.none(),
+            )
     
     @bot.event
     async def on_ready():
