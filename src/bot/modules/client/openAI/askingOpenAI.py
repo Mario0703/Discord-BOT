@@ -14,12 +14,12 @@ class AskOpenAI(ApiClient):
     def __init__(self, tools: Iterable[Tool] = (), client: AsyncOpenAI | None = None):
         self._tools_by_name = {}
         self._tool_definitions = []
-
+        registered_tools = tuple(tools)
+        
         if client is not None:
             self.client = client
         else:
             self.client = AsyncOpenAI(api_key=self.get_api_key())
-        registered_tools = tuple(tools)
 
         for tool in registered_tools:
             self._tools_by_name[tool.name] = tool
