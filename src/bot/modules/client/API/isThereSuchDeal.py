@@ -10,7 +10,6 @@ class Deals(ApiClient):
     BASE_URL = "https://api.isthereanydeal.com"
     API_KEY_ENV_VAR = "ITAD_API_KEY"
 
-    # ISO 3166-1 alpha-2 country codes used by IsThereAnyDeal.
     AREA_CODES = {
         "AT": "Austria",
         "AU": "Australia",
@@ -37,7 +36,6 @@ class Deals(ApiClient):
         "US": "United States",
     }
 
-    # Shop IDs documented by IsThereAnyDeal or used in this project.
     SHOP_TITLES = {
         2: "AllYouPlay",
         3: "Amazon",
@@ -48,11 +46,13 @@ class Deals(ApiClient):
     }
 
     def __init__(self, country: str, shop: str | int, discount_range: Sequence[int]):
-        """Create a deals client with the filters required by the API."""
+        
         if not isinstance(country, str) or not country.strip():
             raise ValueError("country must be a non-empty string")
+        
         if shop is None or (isinstance(shop, str) and not shop.strip()):
             raise ValueError("shop must be specified")
+        
         if isinstance(discount_range, (str, bytes)):
             raise ValueError("discount_range must contain exactly two integers")
         try:
