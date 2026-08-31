@@ -12,6 +12,9 @@ class AskOpenAI(ApiClient):
     API_KEY_ENV_VAR = "API_KEY"
 
     def __init__(self, tools: Iterable[Tool], client: OpenAI | None = None):
+        
+        
+        
         self.client = (
             client if client is not None else OpenAI(api_key=self.get_api_key())
         )
