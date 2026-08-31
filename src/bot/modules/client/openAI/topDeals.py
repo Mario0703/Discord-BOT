@@ -70,17 +70,17 @@ class TopDealsService:
     @staticmethod
     def _ranking_prompt(deals: list[dict[str, Any]]) -> str:
         instructions = """
-Find the three hottest Steam deals in the supplied JSON data and rank them from
-hottest to least hot. Prefer a higher discount percentage; use a lower current
-price only as a tie-breaker.
+        Find the three hottest Steam deals in the supplied JSON data and rank them from
+        hottest to least hot. Prefer a higher discount percentage; use a lower current
+        price only as a tie-breaker.
 
-For each deal, return: title, current price, regular price, discount,
-platforms, store, expiry, and URL. If a supplied field is missing, write
-"Unknown". Do not infer historical lows, genres, gameplay, multiplayer
-support, or whether an item is a full game, DLC, or a package.
+        For each deal, return: title, current price, regular price, discount,
+        platforms, store, expiry, and URL. If a supplied field is missing, write
+        "Unknown". Do not infer historical lows, genres, gameplay, multiplayer
+        support, or whether an item is a full game, DLC, or a package.
 
-Only report information present in the supplied data.
+        Only report information present in the supplied data.
 
-Deal data:
-"""
+        Deal data:
+        """
         return instructions + json.dumps(deals, indent=2)
