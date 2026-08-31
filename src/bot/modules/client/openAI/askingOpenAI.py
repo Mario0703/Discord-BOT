@@ -12,18 +12,23 @@ class AskOpenAI(ApiClient):
     API_KEY_ENV_VAR = "API_KEY"
 
     def __init__(self, tools: Iterable[Tool] = (), client: AsyncOpenAI | None = None):
-        self.client = (
-            client if client is not None else AsyncOpenAI(api_key=self.get_api_key())
-        )
+        self._tools_by_name = {}
+        self._tool_definitions = []
+
+        if client is not None:
+            self.client = client
+        else:
+            self.client = AsyncOpenAI(api_key=self.get_api_key())
         registered_tools = tuple(tools)
-        self._tools_by_name = {tool.name: tool for tool in registered_tools}
+
+        for tool in registered_tools:
+            self._tools_by_name[tool.name] = tool
 
         if len(self._tools_by_name) != len(registered_tools):
             raise ValueError("Every registered tool must have a unique name")
 
-        self._tool_definitions: list[dict[str, Any]] = [
-            tool.definition() for tool in registered_tools
-        ]
+        for tool in registered_tools:
+            self._tool_definitions.append(tool.definition())
 
     async def ask_openai(self, prompt: str) -> str:
         request = {
@@ -47,7 +52,9 @@ class AskOpenAI(ApiClient):
                         {
                             "type": "function_call_output",
                             "call_id": item.call_id,
-                            "output": json.dumps({"error": f"Unknown tool: {item.name}"}),
+                            "output": json.dumps(
+                                {"error": f"Unknown tool: {item.name}"}
+                            ),
                         }
                     )
                     continue
