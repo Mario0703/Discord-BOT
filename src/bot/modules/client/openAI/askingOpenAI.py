@@ -1,6 +1,5 @@
 import json
 from collections.abc import Iterable
-from typing import Any
 from openai import AsyncOpenAI
 from ..API.api_client import ApiClient
 from bot.tools.tool import tool as Tool
