@@ -8,5 +8,9 @@ class tool(ABC):
     parameters: dict[str, Any]
 
     @abstractmethod
+    def definition(self) -> dict[str, Any]:
+        """Return the OpenAI function-tool schema."""
+
+    @abstractmethod
     async def execute(self, **kwargs: Any) -> dict[str, Any]:
-        pass
+        """Run the tool with model-supplied arguments."""

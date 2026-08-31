@@ -1,29 +1,35 @@
+import asyncio
 import json
-from json import tool
 import os
 from datetime import datetime
+from collections.abc import Iterable
+from typing import Any
 
 from openai import OpenAI
 from ..API.isThereSuchDeal import Deals
-from bot.tools.gamesDeal import GamesDealTool
-import asyncio
+from bot.tools.tool import tool as Tool
 
 class AskOpenAI:
 
-    def __init__(self, client=None):
+    def __init__(self, tools: Iterable[Tool], client: OpenAI | None = None):
         self.client = (
             client if client is not None else OpenAI(api_key=os.getenv("API_KEY"))
         )
-        self.game_deals_tool = GamesDealTool()
+        registered_tools = tuple(tools)
+        self._tools_by_name = {tool.name: tool for tool in registered_tools}
 
+        if len(self._tools_by_name) != len(registered_tools):
+            raise ValueError("Every registered tool must have a unique name")
+
+        self._tool_definitions: list[dict[str, Any]] = [
+            tool.definition() for tool in registered_tools
+        ]
 
     def ask_openai(self, prompt: str) -> str:
-        tools = [self.game_deals_tool.definition()]
-
         response = self.client.responses.create(
             model="gpt-5.6-luna",
             input=prompt,
-            tools=tools,
+            tools=self._tool_definitions,
         )
 
         while True:
@@ -33,7 +39,9 @@ class AskOpenAI:
                 if item.type != "function_call":
                     continue
 
-                if item.name != self.game_deals_tool.name:
+                tool = self._tools_by_name.get(item.name)
+
+                if tool is None:
                     tool_outputs.append(
                         {
                             "type": "function_call_output",
@@ -45,7 +53,7 @@ class AskOpenAI:
 
                 try:
                     arguments = json.loads(item.arguments)
-                    result = asyncio.run(self.game_deals_tool.execute(**arguments))
+                    result = asyncio.run(tool.execute(**arguments))
                 except Exception as error:
                     result = {"error": str(error)}
 
@@ -66,7 +74,7 @@ class AskOpenAI:
                 model="gpt-5.6-luna",
                 previous_response_id=response.id,
                 input=tool_outputs,
-                tools=tools,
+                tools=self._tool_definitions,
             )
 
     def ask_openai_about_good_deals(self):
