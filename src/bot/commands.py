@@ -48,7 +48,7 @@ def register_commands(
         await ctx.respond("Hi")
 
     @general.command(
-        name="Reminder", description="I will remind you to check something"
+        name="reminder", description="I will remind you to check something"
     )
     async def reminder(ctx: discord.ApplicationContext, seconds: int, message: str):
         await ctx.respond(f"Okay, I’ll remind you in {seconds} seconds.")
