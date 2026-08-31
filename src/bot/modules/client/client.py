@@ -1,7 +1,5 @@
 import os
-
 from dotenv import load_dotenv
-
 from bot.main import create_discord_bot
 
 

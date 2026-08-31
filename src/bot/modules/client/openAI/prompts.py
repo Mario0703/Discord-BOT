@@ -1,7 +1,6 @@
 import json
 from typing import Any
 
-
 def assistant_prompt(prompt: str) -> str:
     """Return the prompt used for a normal assistant question."""
     return prompt
