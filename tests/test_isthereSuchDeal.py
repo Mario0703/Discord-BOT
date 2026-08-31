@@ -12,7 +12,9 @@ def test_api_request(mock_get):
     }
     mock_get.return_value = mock_response
 
-    result = Deals().get_steam_deals("test-api-key")
+    result = Deals(country="DK", shop="61", discount_range=(80, 100)).get_steam_deals(
+        "test-api-key"
+    )
 
     assert result == {
         "title": "Example Game",
@@ -24,6 +26,7 @@ def test_api_request(mock_get):
         params={
             "country": "DK",
             "shops": "61",
+            "cut": "80..100",
             "offset": 0,
             "limit": 20,
             "sort": "-cut",

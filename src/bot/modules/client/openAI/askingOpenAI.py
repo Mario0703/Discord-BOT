@@ -21,7 +21,7 @@ class AskOpenAI:
         return response.output_text
 
     def ask_openai_about_good_deals(self):
-        deals_client = Deals()
+        deals_client = Deals(country="DK", shop="61", discount_range=(80, 100))
         result = deals_client.get_steam_deals(os.environ["ITAD_API_KEY"])
 
         deals_for_ai = []
