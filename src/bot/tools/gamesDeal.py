@@ -1,4 +1,3 @@
-import os
 from typing import Any
 
 from .tool import tool
@@ -30,5 +29,4 @@ class GamesDealTool(tool):
             shop=kwargs["shop"],
             discount_range=(kwargs["discount_min"], kwargs["discount_max"]),
         )
-        api_key = os.environ["ITAD_API_KEY"]
-        return deals.get_steam_deals(api_key)
+        return deals.get_steam_deals()

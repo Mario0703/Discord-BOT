@@ -3,9 +3,12 @@ import json
 import requests
 from collections.abc import Sequence
 
+from .api_client import ApiClient
 
-class Deals:
+
+class Deals(ApiClient):
     BASE_URL = "https://api.isthereanydeal.com"
+    API_KEY_ENV_VAR = "ITAD_API_KEY"
 
     # ISO 3166-1 alpha-2 country codes used by IsThereAnyDeal.
     AREA_CODES = {
@@ -72,10 +75,10 @@ class Deals:
         self.shops = self.SHOP_TITLES.copy()
         self.areaCode = self.AREA_CODES.copy()
 
-    def get_steam_deals(self, api_key):
+    def get_steam_deals(self):
         response = requests.get(
             f"{self.BASE_URL}/deals/v2",
-            headers={"ITAD-API-Key": api_key},
+            headers={"ITAD-API-Key": self.get_api_key()},
             params={
                 "country": self.country,
                 "shops": self.shop,
