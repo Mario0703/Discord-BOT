@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import discord
 
@@ -17,6 +17,26 @@ def format_code_review(review: str) -> str:
     review = review.replace("```python ", "```python\n")
     review = review.replace("```py ", "```py\n")
     return review.strip()
+
+
+def summary_date_range(start: str, end: str) -> tuple[datetime, datetime]:
+    """Return an inclusive date range suitable for Discord history queries."""
+    start_date = datetime.fromisoformat(start)
+    end_date = datetime.fromisoformat(end)
+
+    if start_date.tzinfo is None:
+        start_date = start_date.replace(tzinfo=timezone.utc)
+    if end_date.tzinfo is None:
+        end_date = end_date.replace(tzinfo=timezone.utc)
+
+    # A date such as 2026-08-31 means the entire calendar day, not midnight only.
+    if "T" not in end and " " not in end:
+        end_date += timedelta(days=1)
+
+    if end_date <= start_date:
+        raise ValueError("The end date must be after the start date")
+
+    return start_date, end_date
 
 
 def register_pycord_command(
@@ -69,10 +89,11 @@ def register_pycord_command(
             return
 
         try:
-            start_date = datetime.fromisoformat(start).replace(tzinfo=timezone.utc)
-            end_date = datetime.fromisoformat(end).replace(tzinfo=timezone.utc)
+            start_date, end_date = summary_date_range(start, end)
         except ValueError:
-            await ctx.respond("Use dates in ISO format, for example: 2026-08-31")
+            await ctx.respond(
+                "Use ISO dates, for example: `2026-08-31` to `2026-08-31`."
+            )
             return
 
         selected_channel = discord.utils.get(
@@ -91,6 +112,7 @@ def register_pycord_command(
             messages.append(
                 f"[{message.created_at.isoformat()}] {message.author}: {message.content}"
             )
+            print("Content:",message.content)
 
         summary = await summary_service.summarize(
             selected_channel.name,
@@ -121,6 +143,7 @@ def register_pycord_command(
     technical = bot.create_group(
         "technical", "Tech related commands", guild_ids=GUILD_IDS
     )
+
     @technical.command(name="code_review", description="Review source code")
     async def code_review(
         ctx: discord.ApplicationContext,

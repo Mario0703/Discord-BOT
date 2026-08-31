@@ -10,7 +10,9 @@ from .tools.weatherTool import WeatherTool
 
 
 def create_discord_bot() -> discord.Bot:
-    bot = discord.Bot()
+    intents = discord.Intents.default()
+    intents.message_content = True
+    bot = discord.Bot(intents=intents)
 
     game_deals_tool = GamesDealTool()
     weather_tool = WeatherTool()
