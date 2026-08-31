@@ -46,6 +46,35 @@ Code to review:
 """
 
 
+def summary_prompt(channel_name: str, start: str, end: str, messages: str) -> str:
+    """Build a prompt for summarizing messages from a Discord channel."""
+    return f"""You are summarizing a Discord channel for its members.
+
+Summarize the messages from #{channel_name} between {start} and {end}.
+
+Requirements:
+- Focus on the main topics, decisions, questions, and action items.
+- Keep the summary concise and easy to scan.
+- Mention important usernames when attribution matters.
+- Do not invent information or claim something happened if it is not in the messages.
+- If there are no meaningful messages, say so clearly.
+
+Use this output format:
+
+## Summary
+...
+
+## Key Points
+- ...
+
+## Action Items
+- ...
+
+Messages:
+{messages}
+"""
+
+
 def ranking_prompt(deals: list[dict[str, Any]]) -> str:
     """Build the prompt used to rank Steam deals."""
     instructions = """
