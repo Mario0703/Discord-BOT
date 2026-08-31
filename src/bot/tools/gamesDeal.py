@@ -30,4 +30,5 @@ class GamesDealTool(tool):
             shop=kwargs["shop"],
             discount_range=(kwargs["discount_min"], kwargs["discount_max"]),
         )
-        return deals.get_steam_deals(os.environ["ITAD_API_KEY"])
+        api_key = os.environ["ITAD_API_KEY"]
+        return deals.get_steam_deals(api_key)
