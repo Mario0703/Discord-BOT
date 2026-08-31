@@ -112,7 +112,7 @@ def register_pycord_command(
             messages.append(
                 f"[{message.created_at.isoformat()}] {message.author}: {message.content}"
             )
-            print("Content:",message.content)
+            print("Content:", message.content)
 
         summary = await summary_service.summarize(
             selected_channel.name,
@@ -151,7 +151,7 @@ def register_pycord_command(
         code: str,
     ):
         await ctx.defer()
-        review = await code_review_service.do_code_review(language, code)
+        review = await code_review_service.do_code_review_with_promt(language, code)
         review = format_code_review(review)
 
         for start in range(0, len(review), MAX_MESSAGE_LENGTH):
