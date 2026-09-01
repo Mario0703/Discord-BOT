@@ -4,6 +4,11 @@ from openai import AsyncOpenAI
 from ..API.api_client import ApiClient
 from bot.tools.tool import tool as Tool
 from .prompts import assistant_prompt
+import discord
+from ....user_conversations import UserConversations
+from ....user import User
+
+
 class AskOpenAI(ApiClient):
     API_KEY_ENV_VAR = "API_KEY"
 
@@ -11,7 +16,7 @@ class AskOpenAI(ApiClient):
         self._tools_by_name = {}
         self._tool_definitions = []
         registered_tools = tuple(tools)
-        
+
         if client is not None:
             self.client = client
         else:
@@ -26,10 +31,22 @@ class AskOpenAI(ApiClient):
         for tool in registered_tools:
             self._tool_definitions.append(tool.definition())
 
-    async def ask_openai(self, prompt: str) -> str:
+    async def ask_openai(
+        self, prompt: str, ctx: discord.ApplicationContext
+    ) -> str:
+        user_id = User(ctx).get_discord_id()
+        user_conversations = UserConversations()
+        conversation_id = user_conversations.get_conversation(user_id)
+
+        if conversation_id is None:
+            conversation = await self.client.conversations.create()
+            conversation_id = conversation.id
+            user_conversations.update_conversation(user_id, conversation_id)
+
         request = {
             "model": "gpt-5.6-luna",
             "input": assistant_prompt(prompt),
+            "conversation": conversation_id,
         }
         if self._tool_definitions:
             request["tools"] = self._tool_definitions
@@ -68,7 +85,6 @@ class AskOpenAI(ApiClient):
                         "output": json.dumps(result),
                     }
                 )
-
             # No tool requests: the model produced its final answer.
             if not tool_outputs:
                 return response.output_text

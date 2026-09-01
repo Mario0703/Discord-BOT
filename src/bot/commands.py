@@ -56,7 +56,7 @@ def register_pycord_command(
     @assistant.command(name="ask", description="Ask Luna a question")
     async def ask_openai(ctx: discord.ApplicationContext, question: str):
         await ctx.defer()
-        answer = await openai_service.ask_openai(question)
+        answer = await openai_service.ask_openai(question, ctx)
         await ctx.followup.send(answer[:MAX_MESSAGE_LENGTH])
 
     @assistant.command(name="deals", description="Get the top Steam deals")
