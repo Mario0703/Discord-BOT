@@ -220,3 +220,6 @@ __marimo__/
 # Local usage and conversation data
 token_usage
 user_converations
+
+# Voice channel recordings
+src/voice channel recordings/

@@ -225,7 +225,7 @@ def register_pycord_command(
         name="upload_mp3", description="Upload an MP3 file to the voice assistant"
     )
     async def upload_mp3(ctx: discord.ApplicationContext, file: discord.Attachment):
-        if not file.content_type == "audio/mpeg":
+        if not file.filename.lower().endswith(".mp3"):
             await ctx.respond("Please upload a valid MP3 file.")
             return
 
