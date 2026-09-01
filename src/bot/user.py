@@ -11,6 +11,3 @@ class User:
     def get_discord_id(self) -> str:
         return self.discord_id
     
-    def get_discord_id(self):
-        """Get the Discord ID of the user."""
-        return self.discord_id

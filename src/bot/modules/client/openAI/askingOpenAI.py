@@ -12,9 +12,15 @@ from ....user import User
 class AskOpenAI(ApiClient):
     API_KEY_ENV_VAR = "API_KEY"
 
-    def __init__(self, tools: Iterable[Tool] = (), client: AsyncOpenAI | None = None):
+    def __init__(
+        self,
+        tools: Iterable[Tool] = (),
+        client: AsyncOpenAI | None = None,
+        user_conversations: UserConversations | None = None,
+    ):
         self._tools_by_name = {}
         self._tool_definitions = []
+        self.user_conversations = user_conversations or UserConversations()
         registered_tools = tuple(tools)
 
         if client is not None:
@@ -35,13 +41,12 @@ class AskOpenAI(ApiClient):
         self, prompt: str, ctx: discord.ApplicationContext
     ) -> str:
         user_id = User(ctx).get_discord_id()
-        user_conversations = UserConversations()
-        conversation_id = user_conversations.get_conversation(user_id)
+        conversation_id = self.user_conversations.get_conversation(user_id)
 
         if conversation_id is None:
             conversation = await self.client.conversations.create()
             conversation_id = conversation.id
-            user_conversations.update_conversation(user_id, conversation_id)
+            self.user_conversations.update_conversation(user_id, conversation_id)
 
         request = {
             "model": "gpt-5.6-luna",
