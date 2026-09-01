@@ -207,6 +207,13 @@ def register_pycord_command(
         else:
             await ctx.respond("You are not in a voice channel.")
     
+    @voice_assistant.command(name="leave", description="Leave the voice channel")
+    async def leave(ctx: discord.ApplicationContext):
+        if ctx.voice_client:
+            await ctx.voice_client.disconnect()
+            await ctx.respond("Left the voice channel.")
+        else:
+            await ctx.respond("I am not in a voice channel.")
     
     @bot.event
     async def on_ready():
