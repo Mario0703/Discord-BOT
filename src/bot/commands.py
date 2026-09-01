@@ -7,6 +7,7 @@ from pathlib import Path
 from bot.modules.client.openAI.askingOpenAI import AskOpenAI
 from bot.modules.client.openAI.codeReview import CodeReview
 from bot.modules.client.openAI.summary import SummaryOpenAI
+from bot.modules.client.openAI.transcript import Transcript
 from bot.modules.client.openAI.topDeals import TopDealsService
 
 GUILD_IDS = [770744107559682108]
@@ -14,6 +15,7 @@ MAX_MESSAGE_LENGTH = 2_000
 VOICE_ASSISTANT_DIR = (
     r"F:\Python Projects\Discord Bot\Discord-BOT\src\voice channel recordings"
 )
+TRANSCRIPTS_DIR = r"F:\Python Projects\Discord Bot\Discord-BOT\src\bot\transcripts"
 
 
 def format_code_review(review: str) -> str:
@@ -49,6 +51,7 @@ def register_pycord_command(
     top_deals_service: TopDealsService,
     code_review_service: CodeReview,
     summary_service: SummaryOpenAI,
+    transcript_service: Transcript,
 ) -> None:
 
     assistant = bot.create_group(
@@ -229,11 +232,29 @@ def register_pycord_command(
             await ctx.respond("Please upload a valid MP3 file.")
             return
 
-        await ctx.respond("File received. Processing...")
-        os.makedirs(VOICE_ASSISTANT_DIR, exist_ok=True)
-        file_path = os.path.join(VOICE_ASSISTANT_DIR, file.filename)
-        with open(file_path, "wb") as f:
-            await file.save(f)
+        await ctx.respond("File received. Uploading and creating transcript...")
+        try:
+            os.makedirs(VOICE_ASSISTANT_DIR, exist_ok=True)
+            filename = Path(file.filename).name
+            file_path = os.path.join(VOICE_ASSISTANT_DIR, filename)
+            with open(file_path, "wb") as f:
+                await file.save(f)
+
+            transcript = await transcript_service.create_transcript(file_path)
+
+            os.makedirs(TRANSCRIPTS_DIR, exist_ok=True)
+            transcript_path = os.path.join(
+                TRANSCRIPTS_DIR, f"{Path(filename).stem}.txt"
+            )
+            with open(transcript_path, "w", encoding="utf-8") as f:
+                f.write(transcript)
+
+            await ctx.followup.send(f"Transcript created and saved")
+        except Exception as error:
+            print(f"MP3 upload/transcription failed: {error}")
+            await ctx.followup.send(
+                "I could not create the transcript. Check the bot logs for details."
+            )
 
     @bot.event
     async def on_ready():
