@@ -281,9 +281,7 @@ def register_pycord_command(
             transcript = await transcript_service.create_transcript(file_path)
 
             os.makedirs(TRANSCRIPTS_DIR, exist_ok=True)
-            transcript_path = os.path.join(
-                TRANSCRIPTS_DIR, f"{transcript_stem}.txt"
-            )
+            transcript_path = os.path.join(TRANSCRIPTS_DIR, f"{transcript_stem}.txt")
             with open(transcript_path, "w", encoding="utf-8") as f:
                 f.write(transcript)
 
@@ -292,6 +290,60 @@ def register_pycord_command(
             print(f"MP3 upload/transcription failed: {error}")
             await ctx.followup.send(
                 "I could not create the transcript. Check the bot logs for details."
+            )
+
+    @voice_assistant.command(
+        name="play_transcript",
+        description="Read a saved transcript aloud in your voice channel",
+    )
+    async def play_transcript(ctx: discord.ApplicationContext, name: str):
+        if ctx.author.voice is None or ctx.author.voice.channel is None:
+            await ctx.respond("You must be in a voice channel first.")
+            return
+
+        transcript_name = Path(name).name
+        if transcript_name in {"", ".", ".."}:
+            await ctx.respond("Please provide a valid transcript name.")
+            return
+
+        transcript_path = Path(TRANSCRIPTS_DIR) / transcript_name
+        if transcript_path.suffix.lower() != ".txt":
+            transcript_path = transcript_path.with_suffix(".txt")
+
+        if not transcript_path.is_file():
+            await ctx.respond(
+                f"I couldn't find the transcript `{transcript_path.name}`."
+            )
+            return
+
+        await ctx.defer()
+        try:
+            transcript_text = await asyncio.to_thread(
+                transcript_path.read_text, encoding="utf-8"
+            )
+            filename = f"{transcript_path.stem}_{datetime.now():%Y%m%d_%H%M%S}.mp3"
+            audio = await asyncio.to_thread(
+                elevenlabs_service.convert_text_to_speech, transcript_text
+            )
+            audio_path = await asyncio.to_thread(
+                elevenlabs_service.save_audio, audio, filename
+            )
+
+            voice_client = ctx.voice_client
+            target_channel = ctx.author.voice.channel
+            if voice_client is None:
+                voice_client = await target_channel.connect()
+            elif voice_client.channel != target_channel:
+                await voice_client.move_to(target_channel)
+
+            if voice_client.is_playing():
+                voice_client.stop()
+            voice_client.play(discord.FFmpegPCMAudio(str(audio_path)))
+            await ctx.followup.send(f"Playing transcript `{transcript_path.name}`.")
+        except Exception as error:
+            print(f"Transcript playback failed: {error}")
+            await ctx.followup.send(
+                "I could not create or play the transcript audio. Check the bot logs."
             )
 
     @voice_assistant.command(
@@ -310,7 +362,7 @@ def register_pycord_command(
             audio = elevenlabs_service.convert_text_to_speech(text)
             audio_path = elevenlabs_service.save_audio(audio, filename)
             voice_client = ctx.voice_client
-            
+
             if voice_client is None:
                 voice_client = await ctx.author.voice.channel.connect()
             elif voice_client.channel != ctx.author.voice.channel:
@@ -326,7 +378,7 @@ def register_pycord_command(
             await ctx.followup.send(
                 "I could not generate or play the speech. Check the bot logs for details."
             )
-    
+
     @bot.event
     async def on_ready():
         print(f"{bot.user} is ready and online!")
