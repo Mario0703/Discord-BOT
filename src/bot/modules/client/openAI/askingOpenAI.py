@@ -101,3 +101,15 @@ class AskOpenAI(ApiClient):
                 input=tool_outputs,
                 tools=self._tool_definitions,
             )
+
+    async def clear_conversation(self, ctx: discord.ApplicationContext) -> bool:
+        """Delete the user's OpenAI conversation and local mapping."""
+        user_id = User(ctx).get_discord_id()
+        conversation_id = self.user_conversations.get_conversation(user_id)
+
+        if conversation_id is None:
+            return False
+
+        await self.client.conversations.delete(conversation_id)
+        self.user_conversations.remove_conversation(user_id)
+        return True

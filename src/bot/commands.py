@@ -59,6 +59,18 @@ def register_pycord_command(
         answer = await openai_service.ask_openai(question, ctx)
         await ctx.followup.send(answer[:MAX_MESSAGE_LENGTH])
 
+    @assistant.command(
+        name="clear_conversation",
+        description="Clear your Luna conversation history",
+    )
+    async def clear_conversation(ctx: discord.ApplicationContext):
+        cleared = await openai_service.clear_conversation(ctx)
+
+        if cleared:
+            await ctx.respond("Your conversation history has been cleared.")
+        else:
+            await ctx.respond("You do not have any conversation history to clear.")
+
     @assistant.command(name="deals", description="Get the top Steam deals")
     async def deals(ctx: discord.ApplicationContext):
         await ctx.defer()

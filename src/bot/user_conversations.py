@@ -26,3 +26,12 @@ class UserConversations:
         user_id = str(user_id)
         self.conversations[user_id] = conversation_id
         self._save()
+
+    def remove_conversation(self, user_id):
+        user_id = str(user_id)
+        conversation_id = self.conversations.pop(user_id, None)
+
+        if conversation_id is not None:
+            self._save()
+
+        return conversation_id
