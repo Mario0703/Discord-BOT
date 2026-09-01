@@ -1,6 +1,6 @@
 import json
 from collections.abc import Iterable
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, NotFoundError
 from ..API.api_client import ApiClient
 from bot.tools.tool import tool as Tool
 from .prompts import assistant_prompt
@@ -58,7 +58,18 @@ class AskOpenAI(ApiClient):
         }
         if self._tool_definitions:
             request["tools"] = self._tool_definitions
-        response = await self.client.responses.create(**request)
+        try:
+            response = await self.client.responses.create(**request)
+        except NotFoundError:
+            # Conversations are stored remotely. A local ID can become stale if
+            # it was deleted in OpenAI, created under another project, or has
+            # otherwise become unavailable.
+            self.user_conversations.remove_conversation(user_id)
+            conversation = await self.client.conversations.create()
+            conversation_id = conversation.id
+            self.user_conversations.update_conversation(user_id, conversation_id)
+            request["conversation"] = conversation_id
+            response = await self.client.responses.create(**request)
         self._record_usage(user_id, response)
 
         while True:

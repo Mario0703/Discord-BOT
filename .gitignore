@@ -218,10 +218,11 @@ __marimo__/
 .streamlit/secrets.toml
 
 # Local usage and conversation data
-token_usage
-user_converations
+token_usage.json
+user_conversations.json
 
 # Voice channel recordings
 src/voice channel recordings/
 src/bot/transcripts/
 src/bot/eleven_labs_speech/
+src/user_conversations.json

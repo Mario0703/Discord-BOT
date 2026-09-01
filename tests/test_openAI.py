@@ -2,6 +2,8 @@ import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock, Mock
 
+from openai import NotFoundError
+
 from bot.modules.client.openAI.askingOpenAI import AskOpenAI
 from bot.token_usage import TokenUsage
 from bot.user_conversations import UserConversations
@@ -40,3 +42,31 @@ def test_ask_openai_creates_and_saves_user_conversation(tmp_path: Path):
     assert token_usage.report() == {
         "12345": {"input": 10, "output": 5}
     }
+
+
+def test_ask_openai_replaces_a_stale_conversation(tmp_path: Path):
+    mock_client = Mock()
+    mock_response = Mock(
+        output_text="A new conversation was started",
+        output=[],
+        usage=Mock(input_tokens=10, output_tokens=5),
+    )
+    stale_response = Mock(status_code=404, request=Mock(), headers={})
+    mock_client.responses.create = AsyncMock(
+        side_effect=[
+            NotFoundError("Conversation not found", response=stale_response, body=None),
+            mock_response,
+        ]
+    )
+    mock_client.conversations.create = AsyncMock(return_value=Mock(id="conv_new"))
+    ctx = Mock(author=Mock(id=12345))
+    conversations = UserConversations(tmp_path / "conversations.json")
+    conversations.update_conversation(12345, "conv_stale")
+
+    service = AskOpenAI(client=mock_client, user_conversations=conversations)
+    result = asyncio.run(service.ask_openai("Say hello", ctx))
+
+    assert result == "A new conversation was started"
+    mock_client.conversations.create.assert_awaited_once_with()
+    assert mock_client.responses.create.await_count == 2
+    assert conversations.get_conversation(12345) == "conv_new"
