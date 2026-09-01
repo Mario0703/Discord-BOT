@@ -1,0 +1,5 @@
+py-cord
+openai
+elevenlabs
+python-dotenv
+requests
