@@ -7,6 +7,7 @@ from .prompts import assistant_prompt
 import discord
 from ....user_conversations import UserConversations
 from ....user import User
+from ....token_usage import TokenUsage
 
 
 class AskOpenAI(ApiClient):
@@ -17,10 +18,14 @@ class AskOpenAI(ApiClient):
         tools: Iterable[Tool] = (),
         client: AsyncOpenAI | None = None,
         user_conversations: UserConversations | None = None,
+        token_usage: TokenUsage | None = None,
     ):
         self._tools_by_name = {}
         self._tool_definitions = []
         self.user_conversations = user_conversations or UserConversations()
+        self.token_usage = token_usage or TokenUsage()
+        self.input_token_count = 0
+        self.output_token_count = 0
         registered_tools = tuple(tools)
 
         if client is not None:
@@ -37,9 +42,7 @@ class AskOpenAI(ApiClient):
         for tool in registered_tools:
             self._tool_definitions.append(tool.definition())
 
-    async def ask_openai(
-        self, prompt: str, ctx: discord.ApplicationContext
-    ) -> str:
+    async def ask_openai(self, prompt: str, ctx: discord.ApplicationContext) -> str:
         user_id = User(ctx).get_discord_id()
         conversation_id = self.user_conversations.get_conversation(user_id)
 
@@ -56,6 +59,7 @@ class AskOpenAI(ApiClient):
         if self._tool_definitions:
             request["tools"] = self._tool_definitions
         response = await self.client.responses.create(**request)
+        self._record_usage(user_id, response)
 
         while True:
             tool_outputs = []
@@ -101,6 +105,28 @@ class AskOpenAI(ApiClient):
                 input=tool_outputs,
                 tools=self._tool_definitions,
             )
+
+            self._record_usage(user_id, response)
+
+    def _record_usage(self, user_id: str, response) -> None:
+        usage = response.usage
+        if usage is None:
+            return
+
+        self.input_token_count += usage.input_tokens
+        self.output_token_count += usage.output_tokens
+        self.token_usage.record(
+            user_id,
+            usage.input_tokens,
+            usage.output_tokens,
+        )
+
+    def get_token_report(self) -> dict[str, dict[str, int]]:
+        return self.token_usage.report()
+
+    def get_token_usage(self) -> tuple[int, int]:
+        """Get the total input and output token usage."""
+        return self.input_token_count, self.output_token_count
 
     async def clear_conversation(self, ctx: discord.ApplicationContext) -> bool:
         """Delete the user's OpenAI conversation and local mapping."""

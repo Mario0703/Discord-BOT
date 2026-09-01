@@ -171,10 +171,26 @@ def register_pycord_command(
                 review[start : start + MAX_MESSAGE_LENGTH],
                 allowed_mentions=discord.AllowedMentions.none(),
             )
-    @technical.command(name="Token rapport", description="Get the input and output token that each user has used in the last 24 hours")
+    @technical.command(
+        name="token_report",
+        description="Get token usage for each user in the last 24 hours",
+    )
     async def token_rapport(ctx: discord.ApplicationContext):
-        # Implementation for token rapport command
-        pass
+        report = openai_service.get_token_report()
+
+        if not report:
+            await ctx.respond("No token usage has been recorded in the last 24 hours.")
+            return
+
+        lines = ["Token usage in the last 24 hours:"]
+        for user_id, usage in report.items():
+            total = usage["input"] + usage["output"]
+            lines.append(
+                f"<@{user_id}> — input: {usage['input']}, "
+                f"output: {usage['output']}, total: {total}"
+            )
+
+        await ctx.respond("\n".join(lines)[:MAX_MESSAGE_LENGTH])
 
     @bot.event
     async def on_ready():
