@@ -171,6 +171,10 @@ def register_pycord_command(
                 review[start : start + MAX_MESSAGE_LENGTH],
                 allowed_mentions=discord.AllowedMentions.none(),
             )
+    @technical.command(name="Token rapport", description="Get the input and output token that each user has used in the last 24 hours")
+    async def token_rapport(ctx: discord.ApplicationContext):
+        # Implementation for token rapport command
+        pass
 
     @bot.event
     async def on_ready():
