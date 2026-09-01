@@ -2,7 +2,7 @@ import asyncio
 from datetime import datetime, timedelta, timezone
 
 import discord
-
+from pathlib import Path
 from bot.modules.client.openAI.askingOpenAI import AskOpenAI
 from bot.modules.client.openAI.codeReview import CodeReview
 from bot.modules.client.openAI.summary import SummaryOpenAI
@@ -201,12 +201,14 @@ def register_pycord_command(
 
     @voice_assistant.command(name="join", description="Join a voice channel")
     async def join(ctx: discord.ApplicationContext):
+        await ctx.defer()
+
         if ctx.author.voice:
             await ctx.author.voice.channel.connect()
-            await ctx.respond("Joined the voice channel.")
+            await ctx.followup.send("Joined the voice channel.")
         else:
-            await ctx.respond("You are not in a voice channel.")
-    
+            await ctx.followup.send("You are not in a voice channel.")
+
     @voice_assistant.command(name="leave", description="Leave the voice channel")
     async def leave(ctx: discord.ApplicationContext):
         if ctx.voice_client:
@@ -214,7 +216,7 @@ def register_pycord_command(
             await ctx.respond("Left the voice channel.")
         else:
             await ctx.respond("I am not in a voice channel.")
-    
+
     @bot.event
     async def on_ready():
         print(f"{bot.user} is ready and online!")
