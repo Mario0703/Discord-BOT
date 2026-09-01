@@ -11,6 +11,9 @@ class ElevenLabsClient(ApiClient):
     """Convert text to speech using ElevenLabs."""
 
     API_KEY_ENV_VAR = "ELEVENLABS_API_KEY"
+    SPEECH_DIR = Path(
+        r"F:\Python Projects\Discord Bot\Discord-BOT\src\bot\eleven_labs_speech"
+    )
 
     def __init__(
         self,
@@ -33,9 +36,15 @@ class ElevenLabsClient(ApiClient):
             text=text,
         )
 
-    def save_audio(self, audio: Iterable[bytes], output_path: str | Path) -> Path:
+    def save_audio(
+        self,
+        audio: Iterable[bytes],
+        output_path: str | Path = "speech.mp3",
+    ) -> Path:
         """Save generated audio chunks to an MP3 file."""
         path = Path(output_path)
+        if not path.is_absolute():
+            path = self.SPEECH_DIR / path
         path.parent.mkdir(parents=True, exist_ok=True)
 
         with path.open("wb") as output_file:
