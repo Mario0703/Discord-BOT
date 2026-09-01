@@ -15,7 +15,6 @@ class OpenWeather(ApiClient):
         self.city_name = city_name
         self.state_code = state_code
         self.country_code = country_code
-    
 
     def get_geocoding(self, limit: int = 1) -> list[dict[str, Any]]:
         if not 1 <= limit <= 5:
@@ -26,7 +25,7 @@ class OpenWeather(ApiClient):
             f"{self.state_code.strip()},"
             f"{self.country_code.strip()}"
         )
-        
+
         base_url = (
             f"{self.DIRECT_GEOCODING_ENDPOINT}"
             f"?q={quote(location, safe=',')}"
@@ -36,7 +35,7 @@ class OpenWeather(ApiClient):
         response = requests.get(base_url, timeout=15)
         response.raise_for_status()
         return response.json()
-    
+
     def get_weather(self) -> dict[str, Any]:
         """Return current weather for the first geocoding match."""
         locations = self.get_geocoding()

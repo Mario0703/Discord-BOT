@@ -1,12 +1,12 @@
 import discord
 
 from .commands import register_pycord_command
+from .modules.client.ElevenLabs.elevenlabs import ElevenLabsClient
 from .modules.client.openAI.askingOpenAI import AskOpenAI
 from .modules.client.openAI.codeReview import CodeReview
 from .modules.client.openAI.summary import SummaryOpenAI
-from .modules.client.openAI.transcript import Transcript
 from .modules.client.openAI.topDeals import TopDealsService
-from .modules.client.ElevenLabs.elevenlabs import ElevenLabsClient
+from .modules.client.openAI.transcript import Transcript
 from .tools.gamesDeal import GamesDealTool
 from .tools.weatherTool import WeatherTool
 

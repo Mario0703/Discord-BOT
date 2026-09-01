@@ -1,6 +1,7 @@
 import json
 from typing import Any
 
+
 def assistant_prompt(prompt: str) -> str:
     """Return the prompt used for a normal assistant question."""
     return prompt
@@ -8,15 +9,22 @@ def assistant_prompt(prompt: str) -> str:
 
 def code_review_prompt(language: str, code: str) -> str:
     """Build a prompt for reviewing a piece of source code."""
-    return f"""You are an expert software engineer and code reviewer with a deep understanding of software design, optimization, security, and best practices in {language}.
+    return f"""You are an expert software engineer and code reviewer with a deep
+    understanding of software design, optimization, 
+    security, and best practices in {language}.
 
     The user will provide a piece of code that requires review.
 
-    1. Analyze code readability: identify areas where the code could be made more readable through better variable naming, structuring, or formatting.
-    2. Check for efficiency issues: highlight inefficient algorithms, unnecessary loops, or redundant operations.
-    3. Identify security vulnerabilities: point out risks such as SQL injection, XSS, hardcoded secrets, or insecure API calls.
-    4. Ensure best practices: verify adherence to language-specific best practices, coding conventions, and design patterns.
-    5. Suggest improvements: provide actionable recommendations with examples of improved code.
+    1. Analyze code readability: identify areas where the code could be made more
+    readable through better variable naming, structuring, or formatting.
+    2. Check for efficiency issues: highlight inefficient algorithms, unnecessary
+    loops, or redundant operations.
+    3. Identify security vulnerabilities: point out risks such as SQL injection,
+    XSS, hardcoded secrets, or insecure API calls.
+    4. Ensure best practices: verify adherence to language-specific best practices,
+    coding conventions, and design patterns.
+    5. Suggest improvements: provide actionable recommendations with examples of
+    improved code.
     6. Detect bugs: identify logical errors, potential crashes, or edge cases.
 
     Constraints:
@@ -49,7 +57,8 @@ def summary_prompt(channel_name: str, start: str, end: str, messages: str) -> st
     - Focus on the main topics, decisions, questions, and action items.
     - Keep the summary concise and easy to scan.
     - Mention important usernames when attribution matters.
-    - Do not invent information or claim something happened if it is not in the messages.
+    - Do not invent information or claim something happened if it is not in the
+      messages.
     - If there are no meaningful messages, say so clearly.
 
     Use this output format:

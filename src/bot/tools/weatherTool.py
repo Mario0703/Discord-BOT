@@ -1,7 +1,7 @@
 from typing import Any
 
-from .tool import tool
 from ..modules.client.API.weather import OpenWeather
+from .tool import tool
 
 
 class WeatherTool(tool):
@@ -20,7 +20,10 @@ class WeatherTool(tool):
                 },
                 "state_code": {
                     "type": "string",
-                    "description": "State code, for example CA. Use an empty string if unavailable.",
+                    "description": (
+                        "State code, for example CA. Use an empty string if "
+                        "unavailable."
+                    ),
                 },
                 "country_code": {
                     "type": "string",

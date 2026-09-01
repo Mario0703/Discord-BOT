@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
 import discord
+
 from bot.command_categories.assistant import register as register_assistant
 from bot.command_categories.general import register as register_general
 from bot.command_categories.technical import register as register_technical

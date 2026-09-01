@@ -1,4 +1,5 @@
 from openai import AsyncOpenAI
+
 from .prompts import summary_prompt
 
 

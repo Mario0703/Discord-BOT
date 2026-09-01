@@ -1,7 +1,7 @@
 from typing import Any
 
-from .tool import tool
 from ..modules.client.API.isThereSuchDeal import Deals
+from .tool import tool
 
 
 class GamesDealTool(tool):
@@ -11,17 +11,34 @@ class GamesDealTool(tool):
         self.parameters = {
             "type": "object",
             "properties": {
-                "country": {"type": "string", "description": "ISO country code, e.g. DK."},
-                "shop": {"type": "integer", "description": "IsThereAnyDeal shop ID, e.g. 61 for Steam."},
-                "discount_min": {"type": "integer", "description": "Minimum discount percentage (0-100)."},
-                "discount_max": {"type": "integer", "description": "Maximum discount percentage (0-100)."},
+                "country": {
+                    "type": "string",
+                    "description": "ISO country code, e.g. DK.",
+                },
+                "shop": {
+                    "type": "integer",
+                    "description": "IsThereAnyDeal shop ID, e.g. 61 for Steam.",
+                },
+                "discount_min": {
+                    "type": "integer",
+                    "description": "Minimum discount percentage (0-100).",
+                },
+                "discount_max": {
+                    "type": "integer",
+                    "description": "Maximum discount percentage (0-100).",
+                },
             },
             "required": ["country", "shop", "discount_min", "discount_max"],
             "additionalProperties": False,
         }
 
     def definition(self) -> dict[str, Any]:
-        return {"type": "function", "name": self.name, "description": self.description, "parameters": self.parameters}
+        return {
+            "type": "function",
+            "name": self.name,
+            "description": self.description,
+            "parameters": self.parameters,
+        }
 
     async def execute(self, **kwargs: Any) -> dict[str, Any]:
         deals = Deals(

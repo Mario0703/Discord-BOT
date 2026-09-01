@@ -1,13 +1,16 @@
 import json
 from collections.abc import Iterable
-from openai import AsyncOpenAI, NotFoundError
-from ..API.api_client import ApiClient
-from bot.tools.tool import tool as Tool
-from .prompts import assistant_prompt
+
 import discord
-from ....user_conversations import UserConversations
-from ....user import User
+from openai import AsyncOpenAI, NotFoundError
+
+from bot.tools.tool import tool as Tool
+
 from ....token_usage import TokenUsage
+from ....user import User
+from ....user_conversations import UserConversations
+from ..API.api_client import ApiClient
+from .prompts import assistant_prompt
 
 
 class AskOpenAI(ApiClient):

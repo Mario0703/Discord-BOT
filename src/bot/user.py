@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import discord
 
 
@@ -10,4 +11,3 @@ class User:
 
     def get_discord_id(self) -> str:
         return self.discord_id
-    

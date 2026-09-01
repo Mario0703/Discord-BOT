@@ -4,6 +4,7 @@ from typing import Any
 from openai import AsyncOpenAI
 
 from bot.tools.gamesDeal import GamesDealTool
+
 from .prompts import ranking_prompt
 
 

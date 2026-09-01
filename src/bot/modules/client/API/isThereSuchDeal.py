@@ -1,7 +1,7 @@
 import json
+from collections.abc import Sequence
 
 import requests
-from collections.abc import Sequence
 
 from .api_client import ApiClient
 
@@ -46,13 +46,13 @@ class Deals(ApiClient):
     }
 
     def __init__(self, country: str, shop: str | int, discount_range: Sequence[int]):
-        
+
         if not isinstance(country, str) or not country.strip():
             raise ValueError("country must be a non-empty string")
-        
+
         if shop is None or (isinstance(shop, str) and not shop.strip()):
             raise ValueError("shop must be specified")
-        
+
         if isinstance(discount_range, (str, bytes)):
             raise ValueError("discount_range must contain exactly two integers")
         try:
@@ -61,7 +61,9 @@ class Deals(ApiClient):
             ):
                 raise ValueError
         except (TypeError, ValueError):
-            raise ValueError("discount_range must contain exactly two integers") from None
+            raise ValueError(
+                "discount_range must contain exactly two integers"
+            ) from None
 
         minimum, maximum = discount_range
         if not 0 <= minimum <= maximum <= 100:

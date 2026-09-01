@@ -39,9 +39,7 @@ def test_ask_openai_creates_and_saves_user_conversation(tmp_path: Path):
 
     saved = UserConversations(tmp_path / "conversations.json")
     assert saved.get_conversation(12345) == "conv_test"
-    assert token_usage.report() == {
-        "12345": {"input": 10, "output": 5}
-    }
+    assert token_usage.report() == {"12345": {"input": 10, "output": 5}}
 
 
 def test_ask_openai_replaces_a_stale_conversation(tmp_path: Path):
