@@ -9,6 +9,7 @@ from bot.modules.client.openAI.codeReview import CodeReview
 from bot.modules.client.openAI.summary import SummaryOpenAI
 from bot.modules.client.openAI.transcript import Transcript
 from bot.modules.client.openAI.topDeals import TopDealsService
+from bot.modules.client.ElevenLabs.elevenlabs import ElevenLabsClient
 
 GUILD_IDS = [770744107559682108]
 MAX_MESSAGE_LENGTH = 2_000
@@ -52,6 +53,7 @@ def register_pycord_command(
     code_review_service: CodeReview,
     summary_service: SummaryOpenAI,
     transcript_service: Transcript,
+    elevenlabs_service: ElevenLabsClient,
 ) -> None:
 
     assistant = bot.create_group(
@@ -256,6 +258,39 @@ def register_pycord_command(
                 "I could not create the transcript. Check the bot logs for details."
             )
 
+    @voice_assistant.command(
+        name="eleven_labs",
+        description="Convert text to speech and play it in your voice channel",
+    )
+    async def eleven_labs(ctx: discord.ApplicationContext, text: str):
+        if ctx.author.voice is None or ctx.author.voice.channel is None:
+            await ctx.respond("You must be in a voice channel first.")
+            return
+
+        await ctx.respond("Creating speech and preparing the voice channel...")
+
+        try:
+            filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}.mp3"
+            audio = elevenlabs_service.convert_text_to_speech(text)
+            audio_path = elevenlabs_service.save_audio(audio, filename)
+
+            voice_client = ctx.voice_client
+            if voice_client is None:
+                voice_client = await ctx.author.voice.channel.connect()
+            elif voice_client.channel != ctx.author.voice.channel:
+                await voice_client.move_to(ctx.author.voice.channel)
+
+            if voice_client.is_playing():
+                voice_client.stop()
+
+            voice_client.play(discord.FFmpegPCMAudio(str(audio_path)))
+            await ctx.followup.send("Playing the ElevenLabs speech now.")
+        except Exception as error:
+            print(f"ElevenLabs voice command failed: {error}")
+            await ctx.followup.send(
+                "I could not generate or play the speech. Check the bot logs for details."
+            )
+    
     @bot.event
     async def on_ready():
         print(f"{bot.user} is ready and online!")

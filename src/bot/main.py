@@ -6,6 +6,7 @@ from .modules.client.openAI.codeReview import CodeReview
 from .modules.client.openAI.summary import SummaryOpenAI
 from .modules.client.openAI.transcript import Transcript
 from .modules.client.openAI.topDeals import TopDealsService
+from .modules.client.ElevenLabs.elevenlabs import ElevenLabsClient
 from .tools.gamesDeal import GamesDealTool
 from .tools.weatherTool import WeatherTool
 
@@ -22,6 +23,7 @@ def create_discord_bot() -> discord.Bot:
     code_review_service = CodeReview(openai_service.client)
     summary_service = SummaryOpenAI(openai_service.client)
     transcript_service = Transcript(openai_service.client)
+    elevenlabs_service = ElevenLabsClient()
 
     register_pycord_command(
         bot,
@@ -30,5 +32,6 @@ def create_discord_bot() -> discord.Bot:
         code_review_service,
         summary_service,
         transcript_service,
+        elevenlabs_service,
     )
     return bot
