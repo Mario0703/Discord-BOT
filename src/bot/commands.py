@@ -171,6 +171,7 @@ def register_pycord_command(
                 review[start : start + MAX_MESSAGE_LENGTH],
                 allowed_mentions=discord.AllowedMentions.none(),
             )
+
     @technical.command(
         name="token_report",
         description="Get token usage for each user in the last 24 hours",
@@ -192,6 +193,21 @@ def register_pycord_command(
 
         await ctx.respond("\n".join(lines)[:MAX_MESSAGE_LENGTH])
 
+    voice_assistant = bot.create_group(
+        "voice_assistant",
+        "Voice assistant commands, these can ONLY be used in a voice channel",
+        guild_ids=GUILD_IDS,
+    )
+
+    @voice_assistant.command(name="join", description="Join a voice channel")
+    async def join(ctx: discord.ApplicationContext):
+        if ctx.author.voice:
+            await ctx.author.voice.channel.connect()
+            await ctx.respond("Joined the voice channel.")
+        else:
+            await ctx.respond("You are not in a voice channel.")
+    
+    
     @bot.event
     async def on_ready():
         print(f"{bot.user} is ready and online!")
