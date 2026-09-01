@@ -11,7 +11,10 @@ from bot.modules.client.openAI.topDeals import TopDealsService
 
 GUILD_IDS = [770744107559682108]
 MAX_MESSAGE_LENGTH = 2_000
-VOICE_ASSISTANT_DIR = r"F:\Python Projects\Discord Bot\Discord-BOT\src\voice channel recordings"
+VOICE_ASSISTANT_DIR = (
+    r"F:\Python Projects\Discord Bot\Discord-BOT\src\voice channel recordings"
+)
+
 
 def format_code_review(review: str) -> str:
     review = review.replace("\\r\\n", "\n").replace("\\n", "\n")
@@ -219,7 +222,7 @@ def register_pycord_command(
             await ctx.respond("I am not in a voice channel.")
 
     @voice_assistant.command(
-        name="upload MP3", description="Upload an MP3 file to the voice assistant"
+        name="upload_mp3", description="Upload an MP3 file to the voice assistant"
     )
     async def upload_mp3(ctx: discord.ApplicationContext, file: discord.Attachment):
         if not file.content_type == "audio/mpeg":
