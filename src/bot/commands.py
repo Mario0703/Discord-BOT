@@ -56,8 +56,20 @@ def register_pycord_command(
     @assistant.command(name="ask", description="Ask Luna a question")
     async def ask_openai(ctx: discord.ApplicationContext, question: str):
         await ctx.defer()
-        answer = await openai_service.ask_openai(question)
+        answer = await openai_service.ask_openai(question, ctx)
         await ctx.followup.send(answer[:MAX_MESSAGE_LENGTH])
+
+    @assistant.command(
+        name="clear_conversation",
+        description="Clear your Luna conversation history",
+    )
+    async def clear_conversation(ctx: discord.ApplicationContext):
+        cleared = await openai_service.clear_conversation(ctx)
+
+        if cleared:
+            await ctx.respond("Your conversation history has been cleared.")
+        else:
+            await ctx.respond("You do not have any conversation history to clear.")
 
     @assistant.command(name="deals", description="Get the top Steam deals")
     async def deals(ctx: discord.ApplicationContext):
@@ -159,6 +171,26 @@ def register_pycord_command(
                 review[start : start + MAX_MESSAGE_LENGTH],
                 allowed_mentions=discord.AllowedMentions.none(),
             )
+    @technical.command(
+        name="token_report",
+        description="Get token usage for each user in the last 24 hours",
+    )
+    async def token_rapport(ctx: discord.ApplicationContext):
+        report = openai_service.get_token_report()
+
+        if not report:
+            await ctx.respond("No token usage has been recorded in the last 24 hours.")
+            return
+
+        lines = ["Token usage in the last 24 hours:"]
+        for user_id, usage in report.items():
+            total = usage["input"] + usage["output"]
+            lines.append(
+                f"<@{user_id}> — input: {usage['input']}, "
+                f"output: {usage['output']}, total: {total}"
+            )
+
+        await ctx.respond("\n".join(lines)[:MAX_MESSAGE_LENGTH])
 
     @bot.event
     async def on_ready():
