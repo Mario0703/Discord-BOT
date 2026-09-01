@@ -273,8 +273,8 @@ def register_pycord_command(
             filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}.mp3"
             audio = elevenlabs_service.convert_text_to_speech(text)
             audio_path = elevenlabs_service.save_audio(audio, filename)
-
             voice_client = ctx.voice_client
+            
             if voice_client is None:
                 voice_client = await ctx.author.voice.channel.connect()
             elif voice_client.channel != ctx.author.voice.channel:

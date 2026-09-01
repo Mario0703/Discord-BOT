@@ -224,3 +224,4 @@ user_converations
 # Voice channel recordings
 src/voice channel recordings/
 src/bot/transcripts/
+src/bot/eleven_labs_speech/
