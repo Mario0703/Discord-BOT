@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta, timezone
+import os
 
 import discord
 from pathlib import Path
@@ -10,7 +11,7 @@ from bot.modules.client.openAI.topDeals import TopDealsService
 
 GUILD_IDS = [770744107559682108]
 MAX_MESSAGE_LENGTH = 2_000
-
+VOICE_ASSISTANT_DIR = r"F:\Python Projects\Discord Bot\Discord-BOT\src\voice channel recordings"
 
 def format_code_review(review: str) -> str:
     review = review.replace("\\r\\n", "\n").replace("\\n", "\n")
@@ -216,6 +217,20 @@ def register_pycord_command(
             await ctx.respond("Left the voice channel.")
         else:
             await ctx.respond("I am not in a voice channel.")
+
+    @voice_assistant.command(
+        name="upload MP3", description="Upload an MP3 file to the voice assistant"
+    )
+    async def upload_mp3(ctx: discord.ApplicationContext, file: discord.Attachment):
+        if not file.content_type == "audio/mpeg":
+            await ctx.respond("Please upload a valid MP3 file.")
+            return
+
+        await ctx.respond("File received. Processing...")
+        os.makedirs(VOICE_ASSISTANT_DIR, exist_ok=True)
+        file_path = os.path.join(VOICE_ASSISTANT_DIR, file.filename)
+        with open(file_path, "wb") as f:
+            await file.save(f)
 
     @bot.event
     async def on_ready():
