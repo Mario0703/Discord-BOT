@@ -36,12 +36,16 @@ def register(bot, openai_service, top_deals_service, guild_ids):
         models = await openai_service.get_model_info()
 
         if not models:
-            await ctx.followup.send("None of the configured OpenAI models are available.")
+            await ctx.followup.send(
+                "None of the configured OpenAI models are available."
+            )
             return
 
         embed = discord.Embed(
             title="Available OpenAI models",
-            description="Choose a model, then select one of its supported reasoning levels.",
+            description=(
+                "Choose a model, then select one of its supported reasoning levels."
+            ),
         )
 
         for model_id, reasoning_levels in models.items():

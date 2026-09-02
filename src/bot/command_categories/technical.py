@@ -1,7 +1,9 @@
 import discord
 
 
-def register(bot, openai_service, code_review_service, guild_ids, format_code_review) -> None:
+def register(
+    bot, openai_service, code_review_service, guild_ids, format_code_review
+) -> None:
     technical = bot.create_group(
         "technical", "Tech related commands", guild_ids=guild_ids
     ) 

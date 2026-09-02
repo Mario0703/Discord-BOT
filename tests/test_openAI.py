@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock, Mock
 
 from openai import NotFoundError
 
-from bot.modules.client.openAI.askingOpenAI import OpenAiCLientImpl
 from bot.model_selections import ModelSelectionStore
+from bot.modules.client.openAI.askingOpenAI import OpenAiCLientImpl
 from bot.token_usage import TokenUsage
 from bot.user_conversations import UserConversations
 

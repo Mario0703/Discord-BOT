@@ -17,6 +17,7 @@ from ....user_conversations import UserConversations
 from ..API.api_client import ApiClient
 from .prompts import assistant_prompt
 
+
 class OpenAiCLientImpl(ApiClient):
     API_KEY_ENV_VAR = "API_KEY"
 
@@ -184,7 +185,7 @@ class OpenAiCLientImpl(ApiClient):
         return model_id
 
     async def get_model_info(self) -> dict[str, list[str]]:
-        """Return configured models available to this API key and their reasoning levels."""
+        """Return available configured models and their reasoning levels."""
         available_model_ids = set(await self.get_model_list())
         models_dict = {}
 
