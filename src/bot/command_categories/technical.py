@@ -1,7 +1,9 @@
 import discord
 
 
-def register(bot, openai_service, code_review_service, guild_ids, format_code_review) -> None:
+def register(
+    bot, openai_service, code_review_service, guild_ids, format_code_review
+) -> None:
     technical = bot.create_group(
         "technical", "Tech related commands", guild_ids=guild_ids
     ) 
@@ -10,7 +12,7 @@ def register(bot, openai_service, code_review_service, guild_ids, format_code_re
     async def code_review(ctx: discord.ApplicationContext, language: str, code: str):
         await ctx.defer()
         review = format_code_review(
-            await code_review_service.do_code_review_with_promt(language, code)
+            await code_review_service.do_code_review_with_promt(language, code, ctx)
         )
         for start in range(0, len(review), 2000):
             await ctx.followup.send(

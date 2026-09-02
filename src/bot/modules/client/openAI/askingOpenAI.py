@@ -6,6 +6,11 @@ from openai import AsyncOpenAI, NotFoundError
 
 from bot.tools.tool import tool as Tool
 
+from ....model_selections import (
+    MODEL_REASONING_LEVELS,
+    ModelSelectionStore,
+    resolve_model_settings,
+)
 from ....token_usage import TokenUsage
 from ....user import User
 from ....user_conversations import UserConversations
@@ -13,7 +18,7 @@ from ..API.api_client import ApiClient
 from .prompts import assistant_prompt
 
 
-class AskOpenAI(ApiClient):
+class OpenAiCLientImpl(ApiClient):
     API_KEY_ENV_VAR = "API_KEY"
 
     def __init__(
@@ -22,11 +27,13 @@ class AskOpenAI(ApiClient):
         client: AsyncOpenAI | None = None,
         user_conversations: UserConversations | None = None,
         token_usage: TokenUsage | None = None,
+        model_selection_store: ModelSelectionStore | None = None,
     ):
         self._tools_by_name = {}
         self._tool_definitions = []
         self.user_conversations = user_conversations or UserConversations()
         self.token_usage = token_usage or TokenUsage()
+        self.model_selection_store = model_selection_store or ModelSelectionStore()
         self.input_token_count = 0
         self.output_token_count = 0
         registered_tools = tuple(tools)
@@ -45,9 +52,12 @@ class AskOpenAI(ApiClient):
         for tool in registered_tools:
             self._tool_definitions.append(tool.definition())
 
-    async def ask_openai(self, prompt: str, ctx: discord.ApplicationContext) -> str:
+    async def generate_repsone_from_openAI(
+        self, prompt: str, ctx: discord.ApplicationContext
+    ) -> str:
         user_id = User(ctx).get_discord_id()
         conversation_id = self.user_conversations.get_conversation(user_id)
+        model_id, reasoning_level = self._get_user_model_settings(user_id)
 
         if conversation_id is None:
             conversation = await self.client.conversations.create()
@@ -55,10 +65,12 @@ class AskOpenAI(ApiClient):
             self.user_conversations.update_conversation(user_id, conversation_id)
 
         request = {
-            "model": "gpt-5.6-luna",
+            "model": model_id,
             "input": assistant_prompt(prompt),
             "conversation": conversation_id,
         }
+        if reasoning_level is not None:
+            request["reasoning"] = {"effort": reasoning_level}
         if self._tool_definitions:
             request["tools"] = self._tool_definitions
         try:
@@ -113,14 +125,25 @@ class AskOpenAI(ApiClient):
                 return response.output_text
 
             # Send results back for the exact preceding response.
+            follow_up_request = {
+                "model": model_id,
+                "previous_response_id": response.id,
+                "input": tool_outputs,
+                "tools": self._tool_definitions,
+            }
+            if reasoning_level is not None:
+                follow_up_request["reasoning"] = {"effort": reasoning_level}
+
             response = await self.client.responses.create(
-                model="gpt-5.6-luna",
-                previous_response_id=response.id,
-                input=tool_outputs,
-                tools=self._tool_definitions,
+                **follow_up_request
             )
 
             self._record_usage(user_id, response)
+
+    def _get_user_model_settings(self, user_id: str) -> tuple[str, str | None]:
+        """Use a saved profile when valid, otherwise use the bot defaults."""
+        selection = self.model_selection_store.get_selection(user_id)
+        return resolve_model_settings(selection)
 
     def _record_usage(self, user_id: str, response) -> None:
         usage = response.usage
@@ -153,3 +176,46 @@ class AskOpenAI(ApiClient):
         await self.client.conversations.delete(conversation_id)
         self.user_conversations.remove_conversation(user_id)
         return True
+
+    async def get_model_list(self) -> list[str]:
+        model_id = []
+        response = self.client.models.list()
+        async for model in response:
+            model_id.append(model.id)
+        return model_id
+
+    async def get_model_info(self) -> dict[str, list[str]]:
+        """Return available configured models and their reasoning levels."""
+        available_model_ids = set(await self.get_model_list())
+        models_dict = {}
+
+        for model_id, reasoning_levels in MODEL_REASONING_LEVELS.items():
+            if model_id in available_model_ids:
+                models_dict[model_id] = reasoning_levels
+
+        return models_dict
+
+    async def set_user_model(
+        self,
+        ctx: discord.ApplicationContext,
+        model_id: str,
+        reasoning_level: str,
+    ) -> bool:
+        """Validate and save a Discord user's model preference."""
+        supported_levels = MODEL_REASONING_LEVELS.get(model_id)
+
+        if supported_levels is None or reasoning_level not in supported_levels:
+            return False
+
+        user_id = User(ctx).get_discord_id()
+        self.model_selection_store.set_selection(
+            user_id,
+            model_id,
+            reasoning_level,
+        )
+        return True
+
+    def get_user_model(self, ctx: discord.ApplicationContext):
+        """Return the saved model preference for the Discord user, if one exists."""
+        user_id = User(ctx).get_discord_id()
+        return self.model_selection_store.get_selection(user_id)
