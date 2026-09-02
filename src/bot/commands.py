@@ -59,53 +59,32 @@ def register_pycord_command(
         GUILD_IDS,
     )
 
-    @bot.slash_command(name="help", description="Show all available bot commands", guild_ids=GUILD_IDS)
+    @bot.slash_command(
+        name="help",
+        description="Show all available bot commands",
+        guild_ids=GUILD_IDS,
+    )
     async def help_command(ctx: discord.ApplicationContext):
-        commands_by_category: dict[str, list[str]] = {}
-        examples = {
-            "assistant ask": "/assistant ask question: Explain async Python",
-            "assistant clear_conversation": "/assistant clear_conversation",
-            "assistant deals": "/assistant deals",
-            "assistant model": "/assistant model",
-            "assistant select_model": (
-                "/assistant select_model model_id: gpt-5.6-sol "
-                "reasoning_level: high"
-            ),
-            "assistant show_my_model": "/assistant show_my_model",
-            "general hello": "/general hello",
-            "general summarize": (
-                "/general summarize start: 2026-09-01 end: 2026-09-02 "
-                "channel_name: general"
-            ),
-            "technical code_review": (
-                "/technical code_review language: python code: print('hello')"
-            ),
-            "voice_assistant upload_mp3": (
-                "/voice_assistant upload_mp3 file: audio.mp3 name: meeting"
-            ),
-            "voice_assistant get_transcript": (
-                "/voice_assistant get_transcript name: meeting"
-            ),
-        }
-
+        commands_by_category: dict[str, list[tuple[str, str, str]]] = {}
         for command in bot.walk_application_commands():
             if isinstance(command, discord.SlashCommandGroup):
                 continue
 
             qualified_name = command.qualified_name
             category = qualified_name.split()[0].replace("_", " ").title()
-            usage = f"/{qualified_name}"
+            parameters = []
 
             for option in command.options:
                 marker = "<...>" if option.required else "[...]"
-                usage += f" {option.name}{marker}"
+                parameters.append(f"{option.name}{marker}")
 
-            command_text = f"`{usage}` — {command.description}"
-            example = examples.get(qualified_name)
-            if example:
-                command_text += f"\n  Example: `{example}`"
-
-            commands_by_category.setdefault(category, []).append(command_text)
+            commands_by_category.setdefault(category, []).append(
+                (
+                    f"/{qualified_name}",
+                    ", ".join(parameters) or "-",
+                    command.description or "-",
+                )
+            )
 
         help_lines = [
             "**Available bot commands**",
@@ -115,7 +94,28 @@ def register_pycord_command(
 
         for category, command_lines in sorted(commands_by_category.items()):
             help_lines.append(f"**{category}**")
-            help_lines.extend(command_lines)
+            headers = ("Command", "Parameters", "Description")
+            widths = [len(header) for header in headers]
+            for command_line in command_lines:
+                for index, value in enumerate(command_line):
+                    widths[index] = max(widths[index], len(value))
+
+            help_lines.append("```")
+            help_lines.append(
+                " | ".join(
+                    header.ljust(widths[index])
+                    for index, header in enumerate(headers)
+                )
+            )
+            help_lines.append("-+-".join("-" * width for width in widths))
+            for command_line in command_lines:
+                help_lines.append(
+                    " | ".join(
+                        value.ljust(widths[index])
+                        for index, value in enumerate(command_line)
+                    )
+                )
+            help_lines.append("```")
             help_lines.append("")
 
         help_lines.extend(
