@@ -73,12 +73,11 @@ def register_pycord_command(
 
         commands = []
         for command in bot.walk_application_commands():
-            if isinstance(command, discord.SlashCommandGroup):
-                continue
-
             commands.append(command)
 
-        for command in sorted(commands, key=lambda item: item.qualified_name):
+        sorted_commands = sorted(commands, key=lambda item: item.qualified_name)
+
+        for command in sorted_commands:
             embed.add_field(
                 name=f"/{command.qualified_name}",
                 value=command.description or "No description available.",
