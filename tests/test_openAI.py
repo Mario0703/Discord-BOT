@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, Mock
 
 from openai import NotFoundError
 
-from bot.modules.client.openAI.askingOpenAI import AskOpenAI
+from bot.modules.client.openAI.askingOpenAI import OpenAiCLientImpl
 from bot.token_usage import TokenUsage
 from bot.user_conversations import UserConversations
 
@@ -22,7 +22,7 @@ def test_ask_openai_creates_and_saves_user_conversation(tmp_path: Path):
     conversations = UserConversations(tmp_path / "conversations.json")
     token_usage = TokenUsage(tmp_path / "token_usage.json")
 
-    service = AskOpenAI(
+    service = OpenAiCLientImpl(
         client=mock_client,
         user_conversations=conversations,
         token_usage=token_usage,
@@ -61,7 +61,7 @@ def test_ask_openai_replaces_a_stale_conversation(tmp_path: Path):
     conversations = UserConversations(tmp_path / "conversations.json")
     conversations.update_conversation(12345, "conv_stale")
 
-    service = AskOpenAI(client=mock_client, user_conversations=conversations)
+    service = OpenAiCLientImpl(client=mock_client, user_conversations=conversations)
     result = asyncio.run(service.ask_openai("Say hello", ctx))
 
     assert result == "A new conversation was started"

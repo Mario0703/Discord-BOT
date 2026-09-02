@@ -12,8 +12,15 @@ from ....user_conversations import UserConversations
 from ..API.api_client import ApiClient
 from .prompts import assistant_prompt
 
+MODEL_REASONING_LEVELS = {
+    "gpt-5.6-luna": ["none", "low", "medium", "high", "xhigh", "max"],
+    "gpt-5.6-terra": ["none", "low", "medium", "high", "xhigh", "max"],
+    "gpt-5.6-sol": ["none", "low", "medium", "high", "xhigh", "max"],
+    "gpt-5": ["minimal", "low", "medium", "high"],
+}
 
-class AskOpenAI(ApiClient):
+
+class OpenAiCLientImpl(ApiClient):
     API_KEY_ENV_VAR = "API_KEY"
 
     def __init__(
@@ -153,3 +160,32 @@ class AskOpenAI(ApiClient):
         await self.client.conversations.delete(conversation_id)
         self.user_conversations.remove_conversation(user_id)
         return True
+
+    def _create_model_list(self) -> list[str]:
+        model_id = []
+        respone = self.client.models.list()
+        for model in respone.data:
+            model_id.append(model.id)
+        return model_id
+
+    def get_model_info(
+        self,
+        requested_reasoning: str = "medium",
+        fallback_reasoning: str = "low",
+    ) -> dict:
+        models_dict = {}
+        returned_models = self._create_model_list()
+
+        for model_id in returned_models:
+            supported_levels = MODEL_REASONING_LEVELS.get(model_id, [])
+
+            if requested_reasoning in supported_levels:
+                reasoning_level = requested_reasoning
+            elif fallback_reasoning in supported_levels:
+                reasoning_level = fallback_reasoning
+            else:
+                reasoning_level = None
+
+            models_dict[model_id] = reasoning_level
+
+        return models_dict
