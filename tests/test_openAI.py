@@ -27,7 +27,7 @@ def test_ask_openai_creates_and_saves_user_conversation(tmp_path: Path):
         user_conversations=conversations,
         token_usage=token_usage,
     )
-    result = asyncio.run(service.ask_openai("Say hello", ctx))
+    result = asyncio.run(service.generate_repsone_from_openAI("Say hello", ctx))
 
     assert result == "Hello from the test"
     mock_client.conversations.create.assert_awaited_once_with()
@@ -62,7 +62,7 @@ def test_ask_openai_replaces_a_stale_conversation(tmp_path: Path):
     conversations.update_conversation(12345, "conv_stale")
 
     service = OpenAiCLientImpl(client=mock_client, user_conversations=conversations)
-    result = asyncio.run(service.ask_openai("Say hello", ctx))
+    result = asyncio.run(service.generate_repsone_from_openAI("Say hello", ctx))
 
     assert result == "A new conversation was started"
     mock_client.conversations.create.assert_awaited_once_with()

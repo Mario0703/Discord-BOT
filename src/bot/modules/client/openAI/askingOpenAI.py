@@ -52,7 +52,9 @@ class OpenAiCLientImpl(ApiClient):
         for tool in registered_tools:
             self._tool_definitions.append(tool.definition())
 
-    async def ask_openai(self, prompt: str, ctx: discord.ApplicationContext) -> str:
+    async def generate_repsone_from_openAI(
+        self, prompt: str, ctx: discord.ApplicationContext
+    ) -> str:
         user_id = User(ctx).get_discord_id()
         conversation_id = self.user_conversations.get_conversation(user_id)
 
