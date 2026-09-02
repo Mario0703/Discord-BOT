@@ -80,7 +80,7 @@ def register_pycord_command(
         for command in sorted_commands:
             embed.add_field(
                 name=f"/{command.qualified_name}",
-                value=command.description or "No description available.",
+                value=command.description,
                 inline=False,
             )
 
