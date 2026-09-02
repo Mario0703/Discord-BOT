@@ -6,6 +6,7 @@ from openai import AsyncOpenAI, NotFoundError
 
 from bot.tools.tool import tool as Tool
 
+from ....model_selections import ModelSelectionStore
 from ....token_usage import TokenUsage
 from ....user import User
 from ....user_conversations import UserConversations
@@ -18,6 +19,8 @@ MODEL_REASONING_LEVELS = {
     "gpt-5.6-sol": ["none", "low", "medium", "high", "xhigh", "max"],
     "gpt-5": ["minimal", "low", "medium", "high"],
 }
+DEFAULT_MODEL_ID = "gpt-5.6-luna"
+DEFAULT_REASONING_LEVEL = "medium"
 
 
 class OpenAiCLientImpl(ApiClient):
@@ -29,11 +32,13 @@ class OpenAiCLientImpl(ApiClient):
         client: AsyncOpenAI | None = None,
         user_conversations: UserConversations | None = None,
         token_usage: TokenUsage | None = None,
+        model_selection_store: ModelSelectionStore | None = None,
     ):
         self._tools_by_name = {}
         self._tool_definitions = []
         self.user_conversations = user_conversations or UserConversations()
         self.token_usage = token_usage or TokenUsage()
+        self.model_selection_store = model_selection_store or ModelSelectionStore()
         self.input_token_count = 0
         self.output_token_count = 0
         registered_tools = tuple(tools)
@@ -57,6 +62,7 @@ class OpenAiCLientImpl(ApiClient):
     ) -> str:
         user_id = User(ctx).get_discord_id()
         conversation_id = self.user_conversations.get_conversation(user_id)
+        model_id, reasoning_level = self._get_user_model_settings(user_id)
 
         if conversation_id is None:
             conversation = await self.client.conversations.create()
@@ -64,10 +70,12 @@ class OpenAiCLientImpl(ApiClient):
             self.user_conversations.update_conversation(user_id, conversation_id)
 
         request = {
-            "model": "gpt-5.6-luna",
+            "model": model_id,
             "input": assistant_prompt(prompt),
             "conversation": conversation_id,
         }
+        if reasoning_level is not None:
+            request["reasoning"] = {"effort": reasoning_level}
         if self._tool_definitions:
             request["tools"] = self._tool_definitions
         try:
@@ -122,14 +130,38 @@ class OpenAiCLientImpl(ApiClient):
                 return response.output_text
 
             # Send results back for the exact preceding response.
+            follow_up_request = {
+                "model": model_id,
+                "previous_response_id": response.id,
+                "input": tool_outputs,
+                "tools": self._tool_definitions,
+            }
+            if reasoning_level is not None:
+                follow_up_request["reasoning"] = {"effort": reasoning_level}
+
             response = await self.client.responses.create(
-                model="gpt-5.6-luna",
-                previous_response_id=response.id,
-                input=tool_outputs,
-                tools=self._tool_definitions,
+                **follow_up_request
             )
 
             self._record_usage(user_id, response)
+
+    def _get_user_model_settings(self, user_id: str) -> tuple[str, str | None]:
+        """Use a saved profile when valid, otherwise use the bot defaults."""
+        selection = self.model_selection_store.get_selection(user_id)
+        model_id = DEFAULT_MODEL_ID
+
+        if selection is not None and selection.model_name in MODEL_REASONING_LEVELS:
+            model_id = selection.model_name
+
+        supported_levels = MODEL_REASONING_LEVELS.get(model_id, [])
+        reasoning_level = DEFAULT_REASONING_LEVEL
+
+        if selection is not None and selection.reasoning_level in supported_levels:
+            reasoning_level = selection.reasoning_level
+        elif reasoning_level not in supported_levels:
+            reasoning_level = None
+
+        return model_id, reasoning_level
 
     def _record_usage(self, user_id: str, response) -> None:
         usage = response.usage

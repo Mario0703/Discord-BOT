@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, Mock
 from openai import NotFoundError
 
 from bot.modules.client.openAI.askingOpenAI import OpenAiCLientImpl
+from bot.model_selections import ModelSelectionStore
 from bot.token_usage import TokenUsage
 from bot.user_conversations import UserConversations
 
@@ -35,6 +36,7 @@ def test_ask_openai_creates_and_saves_user_conversation(tmp_path: Path):
         model="gpt-5.6-luna",
         input="Say hello",
         conversation="conv_test",
+        reasoning={"effort": "medium"},
     )
 
     saved = UserConversations(tmp_path / "conversations.json")
@@ -68,3 +70,31 @@ def test_ask_openai_replaces_a_stale_conversation(tmp_path: Path):
     mock_client.conversations.create.assert_awaited_once_with()
     assert mock_client.responses.create.await_count == 2
     assert conversations.get_conversation(12345) == "conv_new"
+
+
+def test_ask_openai_uses_a_saved_model_selection(tmp_path: Path):
+    mock_client = Mock()
+    mock_response = Mock(
+        output_text="Hello from the test",
+        output=[],
+        usage=Mock(input_tokens=10, output_tokens=5),
+    )
+    mock_client.responses.create = AsyncMock(return_value=mock_response)
+    mock_client.conversations.create = AsyncMock(return_value=Mock(id="conv_test"))
+    ctx = Mock(author=Mock(id=12345))
+    selections = ModelSelectionStore(tmp_path / "model_selections.json")
+    selections.set_selection(12345, "gpt-5.6-sol", "high")
+
+    service = OpenAiCLientImpl(
+        client=mock_client,
+        user_conversations=UserConversations(tmp_path / "conversations.json"),
+        model_selection_store=selections,
+    )
+    asyncio.run(service.generate_repsone_from_openAI("Say hello", ctx))
+
+    mock_client.responses.create.assert_awaited_once_with(
+        model="gpt-5.6-sol",
+        input="Say hello",
+        conversation="conv_test",
+        reasoning={"effort": "high"},
+    )
