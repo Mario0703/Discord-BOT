@@ -59,6 +59,33 @@ def register_pycord_command(
         GUILD_IDS,
     )
 
+    @bot.slash_command(
+        name="help",
+        description="Show all available bot commands",
+        guild_ids=GUILD_IDS,
+    )
+    async def help_command(ctx: discord.ApplicationContext):
+        embed = discord.Embed(
+            title="Available Bot Commands",
+            description="Here are the available commands for this bot:",
+        )
+        embed.set_footer(text="Use /<command> to execute a command.")
+
+        commands = []
+        for command in bot.walk_application_commands():
+            commands.append(command)
+
+        sorted_commands = sorted(commands, key=lambda item: item.qualified_name)
+
+        for command in sorted_commands:
+            embed.add_field(
+                name=f"/{command.qualified_name}",
+                value=command.description,
+                inline=False,
+            )
+
+        await ctx.respond(embed=embed)
+
     @bot.event
     async def on_ready():
         print(f"{bot.user} is ready and online!")
