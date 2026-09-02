@@ -163,31 +163,20 @@ class OpenAiCLientImpl(ApiClient):
         self.user_conversations.remove_conversation(user_id)
         return True
 
-    def _create_model_list(self) -> list[str]:
+    async def get_model_list(self) -> list[str]:
         model_id = []
-        respone = self.client.models.list()
-        for model in respone.data:
+        response = self.client.models.list()
+        async for model in response:
             model_id.append(model.id)
         return model_id
 
-    def get_model_info(
-        self,
-        requested_reasoning: str = "medium",
-        fallback_reasoning: str = "low",
-    ) -> dict:
+    async def get_model_info(self) -> dict[str, list[str]]:
+        """Return configured models available to this API key and their reasoning levels."""
+        available_model_ids = set(await self.get_model_list())
         models_dict = {}
-        returned_models = self._create_model_list()
 
-        for model_id in returned_models:
-            supported_levels = MODEL_REASONING_LEVELS.get(model_id, [])
-
-            if requested_reasoning in supported_levels:
-                reasoning_level = requested_reasoning
-            elif fallback_reasoning in supported_levels:
-                reasoning_level = fallback_reasoning
-            else:
-                reasoning_level = None
-
-            models_dict[model_id] = reasoning_level
+        for model_id, reasoning_levels in MODEL_REASONING_LEVELS.items():
+            if model_id in available_model_ids:
+                models_dict[model_id] = reasoning_levels
 
         return models_dict

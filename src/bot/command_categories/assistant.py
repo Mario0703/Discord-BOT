@@ -29,3 +29,27 @@ def register(bot, openai_service, top_deals_service, guild_ids):
         text = await top_deals_service.get_top_steam_deals()
         for start in range(0, len(text), 2000):
             await ctx.followup.send(text[start : start + 2000])
+
+    @assistant.command(name="model", description="List the models available for openAI")
+    async def list_models(ctx: discord.ApplicationContext):
+        await ctx.defer()
+        models = await openai_service.get_model_info()
+
+        if not models:
+            await ctx.followup.send("None of the configured OpenAI models are available.")
+            return
+
+        embed = discord.Embed(
+            title="Available OpenAI models",
+            description="Choose a model, then select one of its supported reasoning levels.",
+        )
+
+        for model_id, reasoning_levels in models.items():
+            levels = ", ".join(reasoning_levels)
+            embed.add_field(
+                name=model_id,
+                value=f"**Reasoning levels:** {levels}",
+                inline=False,
+            )
+
+        await ctx.followup.send(embed=embed)
