@@ -51,5 +51,12 @@ def register(bot, openai_service, top_deals_service, guild_ids):
                 value=f"**Reasoning levels:** {levels}",
                 inline=False,
             )
-
         await ctx.followup.send(embed=embed)
+    @assistant.command(name = "Select Model", description = "Select a model and reasoning level for your OpenAI interactions")
+    async def select_model(ctx: discord.ApplicationContext, model_id: str, reasoning_level: str):
+        await ctx.defer()
+        success = await openai_service.set_user_model(ctx, model_id, reasoning_level)
+        if success:
+            await ctx.followup.send(f"Model set to {model_id} with reasoning level {reasoning_level}.")
+        else:
+            await ctx.followup.send(f"Failed to set model. Please ensure the model ID and reasoning level are valid.")
