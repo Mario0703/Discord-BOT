@@ -52,11 +52,45 @@ def register(bot, openai_service, top_deals_service, guild_ids):
                 inline=False,
             )
         await ctx.followup.send(embed=embed)
-    @assistant.command(name = "Select Model", description = "Select a model and reasoning level for your OpenAI interactions")
-    async def select_model(ctx: discord.ApplicationContext, model_id: str, reasoning_level: str):
+    
+    @assistant.command(
+        name="select_model",
+        description="Select a model and reasoning level for your OpenAI interactions",
+    )
+    async def select_model(
+        ctx: discord.ApplicationContext,
+        model_id: str,
+        reasoning_level: str,
+    ):
         await ctx.defer()
         success = await openai_service.set_user_model(ctx, model_id, reasoning_level)
+
         if success:
-            await ctx.followup.send(f"Model set to {model_id} with reasoning level {reasoning_level}.")
+            await ctx.followup.send(
+                f"Model set to `{model_id}` with reasoning level `{reasoning_level}`."
+            )
         else:
-            await ctx.followup.send(f"Failed to set model. Please ensure the model ID and reasoning level are valid.")
+            await ctx.followup.send(
+                "That model and reasoning-level combination is not supported. "
+                "Use `/assistant model` to see the available options."
+            )
+
+    @assistant.command(
+        name="show_my_model",
+        description="Show your selected OpenAI model and reasoning level",
+    )
+    async def show_my_model(ctx: discord.ApplicationContext):
+        selection = openai_service.get_user_model(ctx)
+
+        if selection is None:
+            await ctx.respond(
+                "You have not selected a model. The bot is using the default: "
+                "`gpt-5.6-luna` with `medium` reasoning."
+            )
+            return
+
+        model_id, reasoning_level = selection.get_selection()
+        await ctx.respond(
+            f"Your selected model is `{model_id}` with reasoning level "
+            f"`{reasoning_level}`."
+        )

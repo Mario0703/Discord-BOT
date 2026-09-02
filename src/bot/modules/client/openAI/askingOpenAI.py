@@ -6,22 +6,16 @@ from openai import AsyncOpenAI, NotFoundError
 
 from bot.tools.tool import tool as Tool
 
-from ....model_selections import ModelSelectionStore
+from ....model_selections import (
+    MODEL_REASONING_LEVELS,
+    ModelSelectionStore,
+    resolve_model_settings,
+)
 from ....token_usage import TokenUsage
 from ....user import User
 from ....user_conversations import UserConversations
 from ..API.api_client import ApiClient
 from .prompts import assistant_prompt
-
-MODEL_REASONING_LEVELS = {
-    "gpt-5.6-luna": ["none", "low", "medium", "high", "xhigh", "max"],
-    "gpt-5.6-terra": ["none", "low", "medium", "high", "xhigh", "max"],
-    "gpt-5.6-sol": ["none", "low", "medium", "high", "xhigh", "max"],
-    "gpt-5": ["minimal", "low", "medium", "high"],
-}
-DEFAULT_MODEL_ID = "gpt-5.6-luna"
-DEFAULT_REASONING_LEVEL = "medium"
-
 
 class OpenAiCLientImpl(ApiClient):
     API_KEY_ENV_VAR = "API_KEY"
@@ -148,20 +142,7 @@ class OpenAiCLientImpl(ApiClient):
     def _get_user_model_settings(self, user_id: str) -> tuple[str, str | None]:
         """Use a saved profile when valid, otherwise use the bot defaults."""
         selection = self.model_selection_store.get_selection(user_id)
-        model_id = DEFAULT_MODEL_ID
-
-        if selection is not None and selection.model_name in MODEL_REASONING_LEVELS:
-            model_id = selection.model_name
-
-        supported_levels = MODEL_REASONING_LEVELS.get(model_id, [])
-        reasoning_level = DEFAULT_REASONING_LEVEL
-
-        if selection is not None and selection.reasoning_level in supported_levels:
-            reasoning_level = selection.reasoning_level
-        elif reasoning_level not in supported_levels:
-            reasoning_level = None
-
-        return model_id, reasoning_level
+        return resolve_model_settings(selection)
 
     def _record_usage(self, user_id: str, response) -> None:
         usage = response.usage
@@ -212,3 +193,28 @@ class OpenAiCLientImpl(ApiClient):
                 models_dict[model_id] = reasoning_levels
 
         return models_dict
+
+    async def set_user_model(
+        self,
+        ctx: discord.ApplicationContext,
+        model_id: str,
+        reasoning_level: str,
+    ) -> bool:
+        """Validate and save a Discord user's model preference."""
+        supported_levels = MODEL_REASONING_LEVELS.get(model_id)
+
+        if supported_levels is None or reasoning_level not in supported_levels:
+            return False
+
+        user_id = User(ctx).get_discord_id()
+        self.model_selection_store.set_selection(
+            user_id,
+            model_id,
+            reasoning_level,
+        )
+        return True
+
+    def get_user_model(self, ctx: discord.ApplicationContext):
+        """Return the saved model preference for the Discord user, if one exists."""
+        user_id = User(ctx).get_discord_id()
+        return self.model_selection_store.get_selection(user_id)

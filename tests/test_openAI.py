@@ -98,3 +98,28 @@ def test_ask_openai_uses_a_saved_model_selection(tmp_path: Path):
         conversation="conv_test",
         reasoning={"effort": "high"},
     )
+
+
+def test_set_user_model_saves_only_supported_selections(tmp_path: Path):
+    selections = ModelSelectionStore(tmp_path / "model_selections.json")
+    service = OpenAiCLientImpl(client=Mock(), model_selection_store=selections)
+    ctx = Mock(author=Mock(id=12345))
+
+    saved = asyncio.run(service.set_user_model(ctx, "gpt-5.6-sol", "high"))
+    rejected = asyncio.run(service.set_user_model(ctx, "gpt-5.6-sol", "minimal"))
+
+    assert saved is True
+    assert rejected is False
+    assert selections.get_selection(12345).get_selection() == ("gpt-5.6-sol", "high")
+
+
+def test_get_user_model_returns_the_saved_selection(tmp_path: Path):
+    selections = ModelSelectionStore(tmp_path / "model_selections.json")
+    selections.set_selection(12345, "gpt-5.6-terra", "medium")
+    service = OpenAiCLientImpl(client=Mock(), model_selection_store=selections)
+    ctx = Mock(author=Mock(id=12345))
+
+    selection = service.get_user_model(ctx)
+
+    assert selection is not None
+    assert selection.get_selection() == ("gpt-5.6-terra", "medium")
