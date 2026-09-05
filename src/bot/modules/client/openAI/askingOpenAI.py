@@ -43,9 +43,11 @@ class OpenAiCLientImpl(ApiClient):
     async def generate_repsone_from_openAI(
         self, prompt: str, ctx: discord.ApplicationContext
     ) -> str:
+        "Generate a response from OpenAI, using the user's selected model and reasoning level, and executing any tool calls."
         user_id = User(ctx).get_discord_id()
         conversation_id = self.user_conversations.get_conversation(user_id)
-        model_id, reasoning_level = self._get_user_model_settings(user_id)
+        selection = self.model_selection_store.get_selection(user_id)
+        model_id, reasoning_level = resolve_model_settings(selection)
 
         if conversation_id is None:
             conversation_id = await self._create_conversation(user_id)
@@ -135,11 +137,6 @@ class OpenAiCLientImpl(ApiClient):
                 }
             )
         return tool_outputs
-
-    def _get_user_model_settings(self, user_id: str) -> tuple[str, str | None]:
-        """Use a saved profile when valid, otherwise use the bot defaults."""
-        selection = self.model_selection_store.get_selection(user_id)
-        return resolve_model_settings(selection)
 
     def _record_usage(self, user_id: str, response) -> None:
         usage = response.usage

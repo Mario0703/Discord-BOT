@@ -5,6 +5,7 @@ from .prompts import code_review_prompt
 
 
 class CodeReview:
+    "Does a code review using the OpenAI service, using a prompt that is specific to the programming language."
     def __init__(self, openai_service: OpenAiCLientImpl):
         self.openai_service = openai_service
 

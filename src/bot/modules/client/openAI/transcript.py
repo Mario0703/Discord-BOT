@@ -2,6 +2,7 @@ from .askingOpenAI import OpenAiCLientImpl
 
 
 class Transcript:
+    "Creates a transcript from an audio file using the OpenAI service."
     def __init__(self, openai_service: OpenAiCLientImpl):
         self.openai_service = openai_service
 
