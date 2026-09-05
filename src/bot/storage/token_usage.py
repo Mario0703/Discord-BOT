@@ -40,7 +40,7 @@ class TokenUsage:
         self._save()
 
     def report(self, hours: int = 24) -> dict[str, dict[str, int]]:
-        "Rapports the token usage for each user within the specified time window (in hours)."
+        "Reports each user's token usage within the specified time window in hours."
         usage_window_start = datetime.now(timezone.utc) - timedelta(hours=hours)
         usage_by_user: dict[str, dict[str, int]] = {}
 

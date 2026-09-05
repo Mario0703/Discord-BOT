@@ -20,7 +20,7 @@ def register(bot, openai_service, top_deals_service, guild_ids):
     async def clear_conversation(ctx: discord.ApplicationContext):
         cleared = await openai_service.clear_conversation(ctx)
         response_message = ""
-        
+
         if cleared:
             response_message = "Your conversation history has been cleared."
         else:

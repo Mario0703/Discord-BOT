@@ -14,7 +14,8 @@ def test_code_review_uses_the_saved_user_profile(tmp_path: Path):
     mock_client = Mock()
     mock_client.responses.create = AsyncMock(
         return_value=Mock(
-            output_text="Review complete", output=[],
+            output_text="Review complete",
+            output=[],
             usage=Mock(input_tokens=10, output_tokens=5),
         )
     )
@@ -41,6 +42,4 @@ def test_code_review_uses_the_saved_user_profile(tmp_path: Path):
     assert request["reasoning"] == {"effort": "high"}
     assert request["conversation"] == "conv_existing"
     assert request["input"] == code_review_prompt("python", "print('hello')")
-    assert openai_service.token_usage.report() == {
-        "12345": {"input": 10, "output": 5}
-    }
+    assert openai_service.token_usage.report() == {"12345": {"input": 10, "output": 5}}

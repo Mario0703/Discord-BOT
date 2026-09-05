@@ -42,7 +42,7 @@ class OpenAiCLientImpl(ApiClient):
     async def generate_repsone_from_openAI(
         self, prompt: str, ctx: discord.ApplicationContext
     ) -> str:
-        "Generate a response from OpenAI, using the user's selected model and reasoning level, and executing any tool calls."
+        "Generate a response with the selected model and reasoning level."
         user_id = str(ctx.author.id)
         conversation_id = self.user_conversations.get_conversation(user_id)
         selection = self.model_selection_store.selections.get(str(user_id))

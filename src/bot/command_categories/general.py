@@ -25,8 +25,7 @@ def register(bot, summary_service, guild_ids, summary_date_range):
             start_date, end_date = summary_date_range(start, end)
         except ValueError:
             await MessageFormatting.send_response(
-                ctx,
-                "Use ISO dates, for example: `2026-08-31` to `2026-09-01`."
+                ctx, "Use ISO dates, for example: `2026-08-31` to `2026-09-01`."
             )
             return
         channel = discord.utils.get(
