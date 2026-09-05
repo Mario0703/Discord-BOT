@@ -13,7 +13,6 @@ from ....storage.model_selections import (
 )
 from ....storage.token_usage import TokenUsage
 from ....storage.user_conversations import UserConversations
-from ....user import User
 from ..API.api_client import ApiClient
 from .prompts import assistant_prompt
 
@@ -44,7 +43,7 @@ class OpenAiCLientImpl(ApiClient):
         self, prompt: str, ctx: discord.ApplicationContext
     ) -> str:
         "Generate a response from OpenAI, using the user's selected model and reasoning level, and executing any tool calls."
-        user_id = User(ctx).get_discord_id()
+        user_id = str(ctx.author.id)
         conversation_id = self.user_conversations.get_conversation(user_id)
         selection = self.model_selection_store.selections.get(str(user_id))
         model_id, reasoning_level = resolve_model_settings(selection)
@@ -152,7 +151,7 @@ class OpenAiCLientImpl(ApiClient):
         )
 
     async def clear_conversation(self, ctx: discord.ApplicationContext) -> bool:
-        user_id = User(ctx).get_discord_id()
+        user_id = str(ctx.author.id)
         conversation_id = self.user_conversations.get_conversation(user_id)
 
         if conversation_id is None:
@@ -190,7 +189,7 @@ class OpenAiCLientImpl(ApiClient):
         if supported_levels is None or reasoning_level not in supported_levels:
             return None
 
-        user_id = User(ctx).get_discord_id()
+        user_id = str(ctx.author.id)
         self.model_selection_store.set_selection(
             user_id,
             model_id,

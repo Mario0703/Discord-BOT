@@ -1,8 +1,5 @@
 import discord
 
-from ..user import User
-
-
 def register(bot, openai_service, top_deals_service, guild_ids):
     assistant = bot.create_group(
         "assistant", "AI assistant commands", guild_ids=guild_ids
@@ -86,8 +83,8 @@ def register(bot, openai_service, top_deals_service, guild_ids):
         description="Show your selected OpenAI model and reasoning level",
     )
     async def show_my_model(ctx: discord.ApplicationContext):
-        user_id = User(ctx).get_discord_id()
-        selection = openai_service.model_selection_store.selections.get(str(user_id))
+        user_id = str(ctx.author.id)
+        selection = openai_service.model_selection_store.selections.get(user_id)
 
         if selection is None:
             await ctx.respond(
