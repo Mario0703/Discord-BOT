@@ -19,12 +19,14 @@ def register(bot, openai_service, top_deals_service, guild_ids):
     )
     async def clear_conversation(ctx: discord.ApplicationContext):
         cleared = await openai_service.clear_conversation(ctx)
-        await MessageFormatting.send_response(
-            ctx,
-            "Your conversation history has been cleared."
-            if cleared
-            else "You do not have any conversation history to clear."
-        )
+        response_message = ""
+        
+        if cleared:
+            response_message = "Your conversation history has been cleared."
+        else:
+            response_message = "You do not have any conversation history to clear."
+
+        await MessageFormatting.send_followup(ctx, response_message)
 
     @assistant.command(name="deals", description="Get the top Steam deals")
     async def deals(ctx: discord.ApplicationContext):
@@ -39,8 +41,7 @@ def register(bot, openai_service, top_deals_service, guild_ids):
 
         if not models:
             await MessageFormatting.send_followup(
-                ctx,
-                "None of the configured OpenAI models are available."
+                ctx, "None of the configured OpenAI models are available."
             )
             return
 
@@ -75,13 +76,13 @@ def register(bot, openai_service, top_deals_service, guild_ids):
         if selection is not None:
             await MessageFormatting.send_followup(
                 ctx,
-                f"Model set to `{model_id}` with reasoning level `{reasoning_level}`."
+                f"Model set to `{model_id}` with reasoning level `{reasoning_level}`.",
             )
         else:
             await MessageFormatting.send_followup(
                 ctx,
                 "That model and reasoning-level combination is not supported. "
-                "Use `/assistant model` to see the available options."
+                "Use `/assistant model` to see the available options.",
             )
 
     @assistant.command(
@@ -96,7 +97,7 @@ def register(bot, openai_service, top_deals_service, guild_ids):
             await MessageFormatting.send_response(
                 ctx,
                 "You have not selected a model. The bot is using the default: "
-                "`gpt-5.6-luna` with `medium` reasoning."
+                "`gpt-5.6-luna` with `medium` reasoning.",
             )
             return
 
@@ -105,5 +106,5 @@ def register(bot, openai_service, top_deals_service, guild_ids):
         await MessageFormatting.send_response(
             ctx,
             f"Your selected model is `{model_id}` with reasoning level "
-            f"`{reasoning_level}`."
+            f"`{reasoning_level}`.",
         )
