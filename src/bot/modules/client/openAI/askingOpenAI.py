@@ -8,6 +8,7 @@ from bot.tools.tool import tool as Tool
 
 from ....model_selections import (
     MODEL_REASONING_LEVELS,
+    ModelSelection,
     ModelSelectionStore,
     resolve_model_settings,
 )
@@ -155,15 +156,7 @@ class OpenAiCLientImpl(ApiClient):
             usage.output_tokens,
         )
 
-    def get_token_report(self) -> dict[str, dict[str, int]]:
-        return self.token_usage.report()
-
-    def get_token_usage(self) -> tuple[int, int]:
-        """Get the total input and output token usage."""
-        return self.input_token_count, self.output_token_count
-
     async def clear_conversation(self, ctx: discord.ApplicationContext) -> bool:
-        """Delete the user's OpenAI conversation and local mapping."""
         user_id = User(ctx).get_discord_id()
         conversation_id = self.user_conversations.get_conversation(user_id)
 
@@ -182,7 +175,6 @@ class OpenAiCLientImpl(ApiClient):
         return model_id
 
     async def get_model_info(self) -> dict[str, list[str]]:
-        """Return available configured models and their reasoning levels."""
         available_model_ids = set(await self.get_model_list())
         models_dict = {}
 
@@ -192,17 +184,16 @@ class OpenAiCLientImpl(ApiClient):
 
         return models_dict
 
-    async def set_user_model(
+    def set_user_model(
         self,
         ctx: discord.ApplicationContext,
         model_id: str,
         reasoning_level: str,
-    ) -> bool:
-        """Validate and save a Discord user's model preference."""
+    ) -> ModelSelection | None:
         supported_levels = MODEL_REASONING_LEVELS.get(model_id)
 
         if supported_levels is None or reasoning_level not in supported_levels:
-            return False
+            return None
 
         user_id = User(ctx).get_discord_id()
         self.model_selection_store.set_selection(
@@ -210,13 +201,8 @@ class OpenAiCLientImpl(ApiClient):
             model_id,
             reasoning_level,
         )
-        return True
-
-    def get_user_model(self, ctx: discord.ApplicationContext):
-        """Return the saved model preference for the Discord user, if one exists."""
-        user_id = User(ctx).get_discord_id()
         return self.model_selection_store.get_selection(user_id)
-    
+
     async def _create_conversation(self, user_id: str) -> str:
         conversation = await self.client.conversations.create()
         self.user_conversations.update_conversation(user_id, conversation.id)

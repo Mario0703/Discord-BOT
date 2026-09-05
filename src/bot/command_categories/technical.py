@@ -25,7 +25,7 @@ def register(
         description="Get token usage for each user in the last 24 hours",
     )
     async def token_report(ctx: discord.ApplicationContext):
-        report = openai_service.get_token_report()
+        report = openai_service.token_usage.report()
         if not report:
             await ctx.respond("No token usage has been recorded in the last 24 hours.")
             return
