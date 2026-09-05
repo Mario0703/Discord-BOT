@@ -2,8 +2,8 @@ import discord
 
 from .command_categories.registration import register_pycord_command
 from .modules.client.ElevenLabs.elevenlabs import ElevenLabsClient
-from .modules.client.openAI.openai_client_impl import OpenAiCLientImpl
 from .modules.client.openAI.code_review import CodeReview
+from .modules.client.openAI.openai_client_impl import OpenAiCLientImpl
 from .modules.client.openAI.summary import SummaryOpenAI
 from .modules.client.openAI.top_deals import TopDealsService
 from .modules.client.openAI.transcript import Transcript

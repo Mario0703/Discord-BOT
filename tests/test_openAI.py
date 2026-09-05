@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from openai import BadRequestError, NotFoundError
 
-from bot.storage.model_selections import ModelSelectionStore
 from bot.modules.client.openAI.openai_client_impl import OpenAiCLientImpl
+from bot.storage.model_selections import ModelSelectionStore
 from bot.storage.token_usage import TokenUsage
 from bot.storage.user_conversations import UserConversations
 
@@ -25,15 +25,25 @@ def test_ask_openai_completes_tool_calls(tmp_path: Path, tool_status: str):
     )
     tool_call.name = "missing" if tool_status == "unknown" else tool.name
     mock_client = Mock()
-    mock_client.responses.create = AsyncMock(side_effect=[
-        Mock(output=[Mock(type="reasoning"), tool_call],
-             usage=Mock(input_tokens=10, output_tokens=5)),
-        Mock(output=[], output_text="Done", usage=Mock(input_tokens=4, output_tokens=2)),
-    ])
+    mock_client.responses.create = AsyncMock(
+        side_effect=[
+            Mock(
+                output=[Mock(type="reasoning"), tool_call],
+                usage=Mock(input_tokens=10, output_tokens=5),
+            ),
+            Mock(
+                output=[],
+                output_text="Done",
+                usage=Mock(input_tokens=4, output_tokens=2),
+            ),
+        ]
+    )
     conversations = UserConversations(tmp_path / "conversations.json")
     conversations.update_conversation(12345, "conv_existing")
     service = OpenAiCLientImpl(
-        tools=[tool], client=mock_client, user_conversations=conversations,
+        tools=[tool],
+        client=mock_client,
+        user_conversations=conversations,
         token_usage=TokenUsage(tmp_path / "usage.json"),
         model_selection_store=ModelSelectionStore(tmp_path / "models.json"),
     )
@@ -55,10 +65,13 @@ def test_ask_openai_completes_tool_calls(tmp_path: Path, tool_status: str):
         tool.execute.assert_awaited_once_with(city="Oslo")
         if tool_status == "failure":
             expected_result = {"error": "Weather unavailable"}
-    assert follow_up["input"] == [{
-        "type": "function_call_output", "call_id": "call_weather",
-        "output": json.dumps(expected_result),
-    }]
+    assert follow_up["input"] == [
+        {
+            "type": "function_call_output",
+            "call_id": "call_weather",
+            "output": json.dumps(expected_result),
+        }
+    ]
     assert service.input_token_count == 14
     assert service.output_token_count == 7
 
@@ -80,6 +93,7 @@ def test_ask_openai_creates_and_saves_user_conversation(tmp_path: Path):
         client=mock_client,
         user_conversations=conversations,
         token_usage=token_usage,
+        model_selection_store=ModelSelectionStore(tmp_path / "models.json"),
     )
     result = asyncio.run(service.generate_repsone_from_openAI("Say hello", ctx))
 
@@ -117,7 +131,12 @@ def test_ask_openai_replaces_a_stale_conversation(tmp_path: Path):
     conversations = UserConversations(tmp_path / "conversations.json")
     conversations.update_conversation(12345, "conv_stale")
 
-    service = OpenAiCLientImpl(client=mock_client, user_conversations=conversations)
+    service = OpenAiCLientImpl(
+        client=mock_client,
+        user_conversations=conversations,
+        token_usage=TokenUsage(tmp_path / "token_usage.json"),
+        model_selection_store=ModelSelectionStore(tmp_path / "models.json"),
+    )
     result = asyncio.run(service.generate_repsone_from_openAI("Say hello", ctx))
 
     assert result == "A new conversation was started"
@@ -139,7 +158,12 @@ def test_ask_openai_recovers_from_unanswered_tool_call(tmp_path: Path):
     mock_client.conversations.create = AsyncMock(return_value=Mock(id="conv_new"))
     conversations = UserConversations(tmp_path / "conversations.json")
     conversations.update_conversation(12345, "conv_interrupted")
-    service = OpenAiCLientImpl(client=mock_client, user_conversations=conversations)
+    service = OpenAiCLientImpl(
+        client=mock_client,
+        user_conversations=conversations,
+        token_usage=TokenUsage(tmp_path / "token_usage.json"),
+        model_selection_store=ModelSelectionStore(tmp_path / "models.json"),
+    )
 
     result = asyncio.run(
         service.generate_repsone_from_openAI("Hello", Mock(author=Mock(id=12345)))
@@ -163,7 +187,12 @@ def test_ask_openai_does_not_reset_for_other_bad_requests(tmp_path: Path):
     mock_client.responses.create = AsyncMock(side_effect=error)
     conversations = UserConversations(tmp_path / "conversations.json")
     conversations.update_conversation(12345, "conv_existing")
-    service = OpenAiCLientImpl(client=mock_client, user_conversations=conversations)
+    service = OpenAiCLientImpl(
+        client=mock_client,
+        user_conversations=conversations,
+        token_usage=TokenUsage(tmp_path / "token_usage.json"),
+        model_selection_store=ModelSelectionStore(tmp_path / "models.json"),
+    )
 
     with pytest.raises(BadRequestError):
         asyncio.run(
@@ -191,6 +220,7 @@ def test_ask_openai_uses_a_saved_model_selection(tmp_path: Path):
     service = OpenAiCLientImpl(
         client=mock_client,
         user_conversations=UserConversations(tmp_path / "conversations.json"),
+        token_usage=TokenUsage(tmp_path / "token_usage.json"),
         model_selection_store=selections,
     )
     asyncio.run(service.generate_repsone_from_openAI("Say hello", ctx))
@@ -206,7 +236,12 @@ def test_ask_openai_uses_a_saved_model_selection(tmp_path: Path):
 
 def test_set_user_model_saves_only_supported_selections(tmp_path: Path):
     selections = ModelSelectionStore(tmp_path / "model_selections.json")
-    service = OpenAiCLientImpl(client=Mock(), model_selection_store=selections)
+    service = OpenAiCLientImpl(
+        client=Mock(),
+        user_conversations=UserConversations(tmp_path / "conversations.json"),
+        token_usage=TokenUsage(tmp_path / "token_usage.json"),
+        model_selection_store=selections,
+    )
     ctx = Mock(author=Mock(id=12345))
 
     saved = service.set_user_model(ctx, "gpt-5.6-sol", "high")
@@ -224,7 +259,12 @@ def test_set_user_model_saves_only_supported_selections(tmp_path: Path):
 def test_model_selection_store_returns_the_saved_selection(tmp_path: Path):
     selections = ModelSelectionStore(tmp_path / "model_selections.json")
     selections.set_selection(12345, "gpt-5.6-terra", "medium")
-    service = OpenAiCLientImpl(client=Mock(), model_selection_store=selections)
+    service = OpenAiCLientImpl(
+        client=Mock(),
+        user_conversations=UserConversations(tmp_path / "conversations.json"),
+        token_usage=TokenUsage(tmp_path / "token_usage.json"),
+        model_selection_store=selections,
+    )
     selection = service.model_selection_store.selections.get(str(12345))
 
     assert selection is not None
