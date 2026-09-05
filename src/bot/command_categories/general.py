@@ -16,33 +16,35 @@ def register(bot, summary_service, guild_ids, summary_date_range):
     async def summarize(
         ctx: discord.ApplicationContext, start: str, end: str, channel_name: str
     ):
-        permissions = ctx.channel.permissions_for(ctx.author)
+        if ctx.guild is None:
+            await MessageFormatting.send_response(
+                ctx, "This command can only be used in a server."
+            )
+            return
 
-        if not permissions.view_channel or not permissions.read_message_history:
+        channel = discord.utils.get(
+            ctx.guild.text_channels,
+            name=channel_name.removeprefix("#"),
+        )
+        if channel is None:
+            await MessageFormatting.send_response(
+                ctx, f"I couldn't find the channel `{channel_name}`."
+            )
+            return
+
+        permissions = channel.permissions_for(ctx.author)
+        if not (permissions.view_channel and permissions.read_message_history):
             await MessageFormatting.send_response(
                 ctx,
                 "You do not have permission to view this channel or its history.",
             )
             return
 
-        if ctx.guild is None:
-            await MessageFormatting.send_response(
-                ctx, "This command can only be used in a server."
-            )
-            return
         try:
             start_date, end_date = summary_date_range(start, end)
         except ValueError:
             await MessageFormatting.send_response(
                 ctx, "Use ISO dates, for example: `2026-08-31` to `2026-09-01`."
-            )
-            return
-        channel = discord.utils.get(
-            ctx.guild.text_channels, name=channel_name.removeprefix("#")
-        )
-        if channel is None:
-            await MessageFormatting.send_response(
-                ctx, f"I couldn't find the channel `{channel_name}`."
             )
             return
         await ctx.defer()
