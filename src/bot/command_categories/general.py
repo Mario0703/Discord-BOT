@@ -40,7 +40,7 @@ def register(bot, summary_service, guild_ids, summary_date_range):
                 f"{message.content}"
             )
         summary = await summary_service.summerice_channel_history_start_to_end(
-            channel.name, start, end, "\n".join(messages) or "No messages found."
+            channel.name, start, end, "\n".join(messages) or "No messages found.", ctx
         )
         for position in range(0, len(summary), 2000):
             await ctx.followup.send(

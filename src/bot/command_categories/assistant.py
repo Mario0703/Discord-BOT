@@ -28,7 +28,7 @@ def register(bot, openai_service, top_deals_service, guild_ids):
     @assistant.command(name="deals", description="Get the top Steam deals")
     async def deals(ctx: discord.ApplicationContext):
         await ctx.defer()
-        text = await top_deals_service.get_top_steam_deals()
+        text = await top_deals_service.get_top_steam_deals(ctx)
         for start in range(0, len(text), 2000):
             await ctx.followup.send(text[start : start + 2000])
 

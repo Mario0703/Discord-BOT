@@ -3,17 +3,32 @@ from pathlib import Path
 from unittest.mock import AsyncMock, Mock
 
 from bot.model_selections import ModelSelectionStore
+from bot.modules.client.openAI.askingOpenAI import OpenAiCLientImpl
 from bot.modules.client.openAI.codeReview import CodeReview
+from bot.modules.client.openAI.prompts import code_review_prompt
+from bot.token_usage import TokenUsage
+from bot.user_conversations import UserConversations
 
 
 def test_code_review_uses_the_saved_user_profile(tmp_path: Path):
     mock_client = Mock()
     mock_client.responses.create = AsyncMock(
-        return_value=Mock(output_text="Review complete")
+        return_value=Mock(
+            output_text="Review complete", output=[],
+            usage=Mock(input_tokens=10, output_tokens=5),
+        )
     )
     selections = ModelSelectionStore(tmp_path / "model_selections.json")
     selections.set_selection(12345, "gpt-5.6-terra", "high")
-    service = CodeReview(mock_client, selections)
+    conversations = UserConversations(tmp_path / "conversations.json")
+    conversations.update_conversation(12345, "conv_existing")
+    openai_service = OpenAiCLientImpl(
+        client=mock_client,
+        model_selection_store=selections,
+        user_conversations=conversations,
+        token_usage=TokenUsage(tmp_path / "usage.json"),
+    )
+    service = CodeReview(openai_service)
     ctx = Mock(author=Mock(id=12345))
 
     result = asyncio.run(
@@ -24,3 +39,8 @@ def test_code_review_uses_the_saved_user_profile(tmp_path: Path):
     request = mock_client.responses.create.await_args.kwargs
     assert request["model"] == "gpt-5.6-terra"
     assert request["reasoning"] == {"effort": "high"}
+    assert request["conversation"] == "conv_existing"
+    assert request["input"] == code_review_prompt("python", "print('hello')")
+    assert openai_service.token_usage.report() == {
+        "12345": {"input": 10, "output": 5}
+    }

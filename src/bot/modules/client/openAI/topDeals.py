@@ -1,22 +1,24 @@
 from datetime import datetime
 from typing import Any
 
-from openai import AsyncOpenAI
+import discord
 
 from bot.tools.gamesDeal import GamesDealTool
 
+from .askingOpenAI import OpenAiCLientImpl
 from .prompts import ranking_prompt
 
 
 class TopDealsService:
     """Fetch and present the three strongest current Steam deals."""
 
-    def __init__(self, client: AsyncOpenAI, deals_tool: GamesDealTool):
-        self.client = client
+    def __init__(self, openai_service: OpenAiCLientImpl, deals_tool: GamesDealTool):
+        self.openai_service = openai_service
         self.deals_tool = deals_tool
 
     async def get_top_steam_deals(
         self,
+        ctx: discord.ApplicationContext,
         country: str = "DK",
         minimum_discount: int = 80,
         maximum_discount: int = 80,
@@ -29,11 +31,8 @@ class TopDealsService:
             discount_max=maximum_discount,
         )
 
-        response = await self.client.responses.create(
-            model="gpt-5.6-luna",
-            input=ranking_prompt(self._normalise_deals(raw_deals)),
-        )
-        return response.output_text
+        prompt = ranking_prompt(self._normalise_deals(raw_deals))
+        return await self.openai_service.generate_repsone_from_openAI(prompt, ctx)
 
     @staticmethod
     def _normalise_deals(raw_deals: dict[str, Any]) -> list[dict[str, Any]]:
