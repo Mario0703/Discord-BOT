@@ -6,7 +6,7 @@ def register(
 ) -> None:
     technical = bot.create_group(
         "technical", "Tech related commands", guild_ids=guild_ids
-    ) 
+    )
 
     @technical.command(name="code_review", description="Review source code")
     async def code_review(ctx: discord.ApplicationContext, language: str, code: str):

@@ -1,5 +1,4 @@
 import json
-from typing import List
 
 import discord
 from openai import AsyncOpenAI, BadRequestError, NotFoundError
@@ -13,8 +12,8 @@ from ....storage.model_selections import (
     resolve_model_settings,
 )
 from ....storage.token_usage import TokenUsage
-from ....user import User
 from ....storage.user_conversations import UserConversations
+from ....user import User
 from ..API.api_client import ApiClient
 from .prompts import assistant_prompt
 
@@ -24,7 +23,7 @@ class OpenAiCLientImpl(ApiClient):
 
     def __init__(
         self,
-        tools: List[Tool] | None = None,
+        tools: list[Tool] | None = None,
         client: AsyncOpenAI | None = None,
         user_conversations: UserConversations | None = None,
         token_usage: TokenUsage | None = None,
@@ -41,7 +40,6 @@ class OpenAiCLientImpl(ApiClient):
         else:
             self.client = AsyncOpenAI(api_key=self.get_api_key())
 
-
     async def generate_repsone_from_openAI(
         self, prompt: str, ctx: discord.ApplicationContext
     ) -> str:
@@ -51,7 +49,7 @@ class OpenAiCLientImpl(ApiClient):
 
         if conversation_id is None:
             conversation_id = await self._create_conversation(user_id)
-        
+
         tool_definitions = self._get_tool_definitions()
         reasoning = None
         if reasoning_level is not None:

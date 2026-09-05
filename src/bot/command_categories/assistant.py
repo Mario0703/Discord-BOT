@@ -58,7 +58,7 @@ def register(bot, openai_service, top_deals_service, guild_ids):
                 inline=False,
             )
         await ctx.followup.send(embed=embed)
-    
+
     @assistant.command(
         name="select_model",
         description="Select a model and reasoning level for your OpenAI interactions",
@@ -101,4 +101,3 @@ def register(bot, openai_service, top_deals_service, guild_ids):
             f"Your selected model is `{model_id}` with reasoning level "
             f"`{reasoning_level}`."
         )
-    
