@@ -1,6 +1,6 @@
 import discord
 
-from .commands import register_pycord_command
+from .command_categories.registration import register_pycord_command
 from .modules.client.ElevenLabs.elevenlabs import ElevenLabsClient
 from .modules.client.openAI.askingOpenAI import OpenAiCLientImpl
 from .modules.client.openAI.codeReview import CodeReview

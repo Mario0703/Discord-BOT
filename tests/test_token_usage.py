@@ -1,4 +1,4 @@
-from bot.token_usage import TokenUsage
+from bot.storage.token_usage import TokenUsage
 
 
 def test_token_usage_report_groups_recent_usage_by_user(tmp_path):

@@ -1,4 +1,4 @@
-from bot.user_conversations import UserConversations
+from bot.storage.user_conversations import UserConversations
 
 
 def test_user_conversation_mapping_is_saved_and_loaded(tmp_path):

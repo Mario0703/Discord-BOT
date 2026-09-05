@@ -2,12 +2,12 @@ import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock, Mock
 
-from bot.model_selections import ModelSelectionStore
+from bot.storage.model_selections import ModelSelectionStore
 from bot.modules.client.openAI.askingOpenAI import OpenAiCLientImpl
 from bot.modules.client.openAI.codeReview import CodeReview
 from bot.modules.client.openAI.prompts import code_review_prompt
-from bot.token_usage import TokenUsage
-from bot.user_conversations import UserConversations
+from bot.storage.token_usage import TokenUsage
+from bot.storage.user_conversations import UserConversations
 
 
 def test_code_review_uses_the_saved_user_profile(tmp_path: Path):

@@ -6,10 +6,10 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from openai import BadRequestError, NotFoundError
 
-from bot.model_selections import ModelSelectionStore
+from bot.storage.model_selections import ModelSelectionStore
 from bot.modules.client.openAI.askingOpenAI import OpenAiCLientImpl
-from bot.token_usage import TokenUsage
-from bot.user_conversations import UserConversations
+from bot.storage.token_usage import TokenUsage
+from bot.storage.user_conversations import UserConversations
 
 
 @pytest.mark.parametrize("tool_status", ["success", "unknown", "failure"])
