@@ -16,6 +16,15 @@ def register(bot, summary_service, guild_ids, summary_date_range):
     async def summarize(
         ctx: discord.ApplicationContext, start: str, end: str, channel_name: str
     ):
+        permissions = ctx.channel.permissions_for(ctx.author)
+
+        if not permissions.view_channel or not permissions.read_message_history:
+            await MessageFormatting.send_response(
+                ctx,
+                "You do not have permission to view this channel or its history.",
+            )
+            return
+
         if ctx.guild is None:
             await MessageFormatting.send_response(
                 ctx, "This command can only be used in a server."
