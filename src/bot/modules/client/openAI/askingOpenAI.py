@@ -1,8 +1,8 @@
 import json
-from collections.abc import Iterable
+from typing import List
 
 import discord
-from openai import AsyncOpenAI, NotFoundError
+from openai import AsyncOpenAI, BadRequestError, NotFoundError
 
 from bot.tools.tool import tool as Tool
 
@@ -23,34 +23,23 @@ class OpenAiCLientImpl(ApiClient):
 
     def __init__(
         self,
-        tools: Iterable[Tool] = (),
+        tools: List[Tool] | None = None,
         client: AsyncOpenAI | None = None,
         user_conversations: UserConversations | None = None,
         token_usage: TokenUsage | None = None,
         model_selection_store: ModelSelectionStore | None = None,
     ):
-        self._tools_by_name = {}
-        self._tool_definitions = []
         self.user_conversations = user_conversations or UserConversations()
         self.token_usage = token_usage or TokenUsage()
         self.model_selection_store = model_selection_store or ModelSelectionStore()
         self.input_token_count = 0
         self.output_token_count = 0
-        registered_tools = tuple(tools)
-
+        self.tools = tools or []
         if client is not None:
             self.client = client
         else:
             self.client = AsyncOpenAI(api_key=self.get_api_key())
 
-        for tool in registered_tools:
-            self._tools_by_name[tool.name] = tool
-
-        if len(self._tools_by_name) != len(registered_tools):
-            raise ValueError("Every registered tool must have a unique name")
-
-        for tool in registered_tools:
-            self._tool_definitions.append(tool.definition())
 
     async def generate_repsone_from_openAI(
         self, prompt: str, ctx: discord.ApplicationContext
@@ -60,55 +49,69 @@ class OpenAiCLientImpl(ApiClient):
         model_id, reasoning_level = self._get_user_model_settings(user_id)
 
         if conversation_id is None:
-            conversation = await self.client.conversations.create()
-            conversation_id = conversation.id
-            self.user_conversations.update_conversation(user_id, conversation_id)
-
-        request = {
-            "model": model_id,
-            "input": assistant_prompt(prompt),
-            "conversation": conversation_id,
-        }
+            conversation_id = await self._create_conversation(user_id)
+        
+        tool_definitions = []
+        reasoning = None
+        
+        for tool in self.tools:
+            tool_definitions.append(tool.definition())    
+        
+        # fall back to default model if the user selected model is not available
         if reasoning_level is not None:
-            request["reasoning"] = {"effort": reasoning_level}
-        if self._tool_definitions:
-            request["tools"] = self._tool_definitions
+            reasoning = {"effort": reasoning_level}
+
         try:
-            response = await self.client.responses.create(**request)
-        except NotFoundError:
-            # Conversations are stored remotely. A local ID can become stale if
-            # it was deleted in OpenAI, created under another project, or has
-            # otherwise become unavailable.
-            self.user_conversations.remove_conversation(user_id)
-            conversation = await self.client.conversations.create()
-            conversation_id = conversation.id
-            self.user_conversations.update_conversation(user_id, conversation_id)
-            request["conversation"] = conversation_id
-            response = await self.client.responses.create(**request)
+            response = await self.client.responses.create(
+                model=model_id,
+                input=assistant_prompt(prompt),
+                conversation=conversation_id,
+                tools=tool_definitions,
+                reasoning=reasoning,
+            )
+        except (NotFoundError, BadRequestError) as error:
+            if isinstance(error, BadRequestError):
+                if "No tool output found for function call" not in error.message:
+                    raise
+            # Missing or interrupted conversations need a fresh conversation.
+            conversation_id = await self._create_conversation(user_id)
+            response = await self.client.responses.create(
+                model=model_id,
+                input=assistant_prompt(prompt),
+                conversation=conversation_id,
+                tools=tool_definitions,
+                reasoning=reasoning,
+            )
+            
         self._record_usage(user_id, response)
 
         while True:
             tool_outputs = []
-            for item in response.output:
-                if item.type != "function_call":
+            for output_item in response.output:
+                
+                if output_item.type != "function_call":
                     continue
+                
+                tool = None
+                for available_tool in self.tools:
+                    if available_tool.name == output_item.name:
+                        tool = available_tool
+                        break
 
-                tool = self._tools_by_name.get(item.name)
-
-                if tool is None:
+                if tool is None: # Skib undefined tool, return an error message to the model
                     tool_outputs.append(
                         {
                             "type": "function_call_output",
-                            "call_id": item.call_id,
+                            "call_id": output_item.call_id,
                             "output": json.dumps(
-                                {"error": f"Unknown tool: {item.name}"}
+                                {"error": f"Unknown tool: {output_item.name}"}
                             ),
                         }
                     )
                     continue
 
                 try:
-                    arguments = json.loads(item.arguments)
+                    arguments = json.loads(output_item.arguments)
                     result = await tool.execute(**arguments)
                 except Exception as error:
                     result = {"error": str(error)}
@@ -116,7 +119,7 @@ class OpenAiCLientImpl(ApiClient):
                 tool_outputs.append(
                     {
                         "type": "function_call_output",
-                        "call_id": item.call_id,
+                        "call_id": output_item.call_id,
                         "output": json.dumps(result),
                     }
                 )
@@ -124,19 +127,16 @@ class OpenAiCLientImpl(ApiClient):
             if not tool_outputs:
                 return response.output_text
 
-            # Send results back for the exact preceding response.
+            # Send tool results back to the user's conversation.
             follow_up_request = {
                 "model": model_id,
-                "previous_response_id": response.id,
+                "conversation": conversation_id,
                 "input": tool_outputs,
-                "tools": self._tool_definitions,
+                "reasoning": reasoning,
+                "tools": tool_definitions,
             }
-            if reasoning_level is not None:
-                follow_up_request["reasoning"] = {"effort": reasoning_level}
 
-            response = await self.client.responses.create(
-                **follow_up_request
-            )
+            response = await self.client.responses.create(**follow_up_request)
 
             self._record_usage(user_id, response)
 
@@ -219,3 +219,8 @@ class OpenAiCLientImpl(ApiClient):
         """Return the saved model preference for the Discord user, if one exists."""
         user_id = User(ctx).get_discord_id()
         return self.model_selection_store.get_selection(user_id)
+    
+    async def _create_conversation(self, user_id: str) -> str:
+        conversation = await self.client.conversations.create()
+        self.user_conversations.update_conversation(user_id, conversation.id)
+        return conversation.id

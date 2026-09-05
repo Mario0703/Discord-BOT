@@ -9,7 +9,7 @@ def register(bot, openai_service, top_deals_service, guild_ids):
     @assistant.command(name="ask", description="Ask Luna a question")
     async def ask_openai(ctx: discord.ApplicationContext, question: str):
         await ctx.defer()
-        answer = await openai_service.ask_openai(question, ctx)
+        answer = await openai_service.generate_repsone_from_openAI(question, ctx)
         await ctx.followup.send(answer[:2000])
 
     @assistant.command(

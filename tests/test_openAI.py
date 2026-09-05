@@ -2,7 +2,8 @@ import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock, Mock
 
-from openai import NotFoundError
+import pytest
+from openai import BadRequestError, NotFoundError
 
 from bot.model_selections import ModelSelectionStore
 from bot.modules.client.openAI.askingOpenAI import OpenAiCLientImpl
@@ -37,6 +38,7 @@ def test_ask_openai_creates_and_saves_user_conversation(tmp_path: Path):
         input="Say hello",
         conversation="conv_test",
         reasoning={"effort": "medium"},
+        tools=[],
     )
 
     saved = UserConversations(tmp_path / "conversations.json")
@@ -72,6 +74,55 @@ def test_ask_openai_replaces_a_stale_conversation(tmp_path: Path):
     assert conversations.get_conversation(12345) == "conv_new"
 
 
+def test_ask_openai_recovers_from_unanswered_tool_call(tmp_path: Path):
+    mock_client = Mock()
+    error = BadRequestError(
+        "No tool output found for function call call_test.",
+        response=Mock(status_code=400, request=Mock(), headers={}),
+        body=None,
+    )
+    mock_client.responses.create = AsyncMock(
+        side_effect=[error, Mock(output_text="Recovered", output=[], usage=None)]
+    )
+    mock_client.conversations.create = AsyncMock(return_value=Mock(id="conv_new"))
+    conversations = UserConversations(tmp_path / "conversations.json")
+    conversations.update_conversation(12345, "conv_interrupted")
+    service = OpenAiCLientImpl(client=mock_client, user_conversations=conversations)
+
+    result = asyncio.run(
+        service.generate_repsone_from_openAI("Hello", Mock(author=Mock(id=12345)))
+    )
+
+    assert result == "Recovered"
+    calls = mock_client.responses.create.await_args_list
+    assert len(calls) == 2
+    assert calls[0].kwargs["conversation"] == "conv_interrupted"
+    assert calls[1].kwargs["conversation"] == "conv_new"
+    assert conversations.get_conversation(12345) == "conv_new"
+
+
+def test_ask_openai_does_not_reset_for_other_bad_requests(tmp_path: Path):
+    mock_client = Mock()
+    error = BadRequestError(
+        "Unsupported reasoning effort",
+        response=Mock(status_code=400, request=Mock(), headers={}),
+        body=None,
+    )
+    mock_client.responses.create = AsyncMock(side_effect=error)
+    conversations = UserConversations(tmp_path / "conversations.json")
+    conversations.update_conversation(12345, "conv_existing")
+    service = OpenAiCLientImpl(client=mock_client, user_conversations=conversations)
+
+    with pytest.raises(BadRequestError):
+        asyncio.run(
+            service.generate_repsone_from_openAI("Hello", Mock(author=Mock(id=12345)))
+        )
+
+    mock_client.responses.create.assert_awaited_once()
+    mock_client.conversations.create.assert_not_called()
+    assert conversations.get_conversation(12345) == "conv_existing"
+
+
 def test_ask_openai_uses_a_saved_model_selection(tmp_path: Path):
     mock_client = Mock()
     mock_response = Mock(
@@ -97,6 +148,7 @@ def test_ask_openai_uses_a_saved_model_selection(tmp_path: Path):
         input="Say hello",
         conversation="conv_test",
         reasoning={"effort": "high"},
+        tools=[],
     )
 
 
