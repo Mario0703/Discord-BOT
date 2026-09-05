@@ -51,16 +51,39 @@ class OpenAiCLientImpl(ApiClient):
         if conversation_id is None:
             conversation_id = await self._create_conversation(user_id)
         
-        tool_definitions = []
+        tool_definitions = self._get_tool_definitions()
         reasoning = None
-        
-        for tool in self.tools:
-            tool_definitions.append(tool.definition())    
-        
-        # fall back to default model if the user selected model is not available
         if reasoning_level is not None:
             reasoning = {"effort": reasoning_level}
 
+        response, conversation_id = await self._create_initial_response(
+            user_id, prompt, conversation_id, model_id, tool_definitions, reasoning
+        )
+        self._record_usage(user_id, response)
+
+        while True:
+            tool_outputs = await self._execute_tool_calls(response)
+            if not tool_outputs:
+                return response.output_text
+
+            response = await self.client.responses.create(
+                model=model_id,
+                conversation=conversation_id,
+                input=tool_outputs,
+                reasoning=reasoning,
+                tools=tool_definitions,
+            )
+            self._record_usage(user_id, response)
+
+    def _get_tool_definitions(self) -> list[dict]:
+        tool_definitions = []
+        for tool in self.tools:
+            tool_definitions.append(tool.definition())
+        return tool_definitions
+
+    async def _create_initial_response(
+        self, user_id, prompt, conversation_id, model_id, tool_definitions, reasoning
+    ):
         try:
             response = await self.client.responses.create(
                 model=model_id,
@@ -73,7 +96,6 @@ class OpenAiCLientImpl(ApiClient):
             if isinstance(error, BadRequestError):
                 if "No tool output found for function call" not in error.message:
                     raise
-            # Missing or interrupted conversations need a fresh conversation.
             conversation_id = await self._create_conversation(user_id)
             response = await self.client.responses.create(
                 model=model_id,
@@ -82,63 +104,38 @@ class OpenAiCLientImpl(ApiClient):
                 tools=tool_definitions,
                 reasoning=reasoning,
             )
-            
-        self._record_usage(user_id, response)
+        return response, conversation_id
 
-        while True:
-            tool_outputs = []
-            for output_item in response.output:
-                
-                if output_item.type != "function_call":
-                    continue
-                
-                tool = None
-                for available_tool in self.tools:
-                    if available_tool.name == output_item.name:
-                        tool = available_tool
-                        break
+    def _find_tool(self, name: str) -> Tool | None:
+        for available_tool in self.tools:
+            if available_tool.name == name:
+                return available_tool
+        return None
 
-                if tool is None: # Skib undefined tool, return an error message to the model
-                    tool_outputs.append(
-                        {
-                            "type": "function_call_output",
-                            "call_id": output_item.call_id,
-                            "output": json.dumps(
-                                {"error": f"Unknown tool: {output_item.name}"}
-                            ),
-                        }
-                    )
-                    continue
+    async def _execute_tool_calls(self, response) -> list[dict]:
+        tool_outputs = []
+        for output_item in response.output:
+            if output_item.type != "function_call":
+                continue
 
+            tool = self._find_tool(output_item.name)
+            if tool is None:
+                result = {"error": f"Unknown tool: {output_item.name}"}
+            else:
                 try:
                     arguments = json.loads(output_item.arguments)
                     result = await tool.execute(**arguments)
                 except Exception as error:
                     result = {"error": str(error)}
 
-                tool_outputs.append(
-                    {
-                        "type": "function_call_output",
-                        "call_id": output_item.call_id,
-                        "output": json.dumps(result),
-                    }
-                )
-            # No tool requests: the model produced its final answer.
-            if not tool_outputs:
-                return response.output_text
-
-            # Send tool results back to the user's conversation.
-            follow_up_request = {
-                "model": model_id,
-                "conversation": conversation_id,
-                "input": tool_outputs,
-                "reasoning": reasoning,
-                "tools": tool_definitions,
-            }
-
-            response = await self.client.responses.create(**follow_up_request)
-
-            self._record_usage(user_id, response)
+            tool_outputs.append(
+                {
+                    "type": "function_call_output",
+                    "call_id": output_item.call_id,
+                    "output": json.dumps(result),
+                }
+            )
+        return tool_outputs
 
     def _get_user_model_settings(self, user_id: str) -> tuple[str, str | None]:
         """Use a saved profile when valid, otherwise use the bot defaults."""

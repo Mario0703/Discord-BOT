@@ -1,4 +1,5 @@
 import asyncio
+import json
 from pathlib import Path
 from unittest.mock import AsyncMock, Mock
 
@@ -9,6 +10,56 @@ from bot.model_selections import ModelSelectionStore
 from bot.modules.client.openAI.askingOpenAI import OpenAiCLientImpl
 from bot.token_usage import TokenUsage
 from bot.user_conversations import UserConversations
+
+
+@pytest.mark.parametrize("tool_status", ["success", "unknown", "failure"])
+def test_ask_openai_completes_tool_calls(tmp_path: Path, tool_status: str):
+    tool = Mock()
+    tool.name = "get_weather"
+    tool.definition.return_value = {"type": "function", "name": tool.name}
+    tool.execute = AsyncMock(return_value={"temperature": 20})
+    if tool_status == "failure":
+        tool.execute.side_effect = ValueError("Weather unavailable")
+    tool_call = Mock(
+        type="function_call", call_id="call_weather", arguments='{"city": "Oslo"}'
+    )
+    tool_call.name = "missing" if tool_status == "unknown" else tool.name
+    mock_client = Mock()
+    mock_client.responses.create = AsyncMock(side_effect=[
+        Mock(output=[Mock(type="reasoning"), tool_call],
+             usage=Mock(input_tokens=10, output_tokens=5)),
+        Mock(output=[], output_text="Done", usage=Mock(input_tokens=4, output_tokens=2)),
+    ])
+    conversations = UserConversations(tmp_path / "conversations.json")
+    conversations.update_conversation(12345, "conv_existing")
+    service = OpenAiCLientImpl(
+        tools=[tool], client=mock_client, user_conversations=conversations,
+        token_usage=TokenUsage(tmp_path / "usage.json"),
+        model_selection_store=ModelSelectionStore(tmp_path / "models.json"),
+    )
+
+    result = asyncio.run(
+        service.generate_repsone_from_openAI("Weather?", Mock(author=Mock(id=12345)))
+    )
+
+    assert result == "Done"
+    follow_up = mock_client.responses.create.await_args_list[1].kwargs
+    assert follow_up["conversation"] == "conv_existing"
+    assert follow_up["tools"] == [tool.definition.return_value]
+    assert follow_up["reasoning"] == {"effort": "medium"}
+    expected_result = {"temperature": 20}
+    if tool_status == "unknown":
+        expected_result = {"error": "Unknown tool: missing"}
+        tool.execute.assert_not_awaited()
+    else:
+        tool.execute.assert_awaited_once_with(city="Oslo")
+        if tool_status == "failure":
+            expected_result = {"error": "Weather unavailable"}
+    assert follow_up["input"] == [{
+        "type": "function_call_output", "call_id": "call_weather",
+        "output": json.dumps(expected_result),
+    }]
+    assert service.get_token_usage() == (14, 7)
 
 
 def test_ask_openai_creates_and_saves_user_conversation(tmp_path: Path):
