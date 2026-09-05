@@ -22,7 +22,7 @@ def create_discord_bot() -> discord.Bot:
     top_deals_service = TopDealsService(openai_service, game_deals_tool)
     code_review_service = CodeReview(openai_service)
     summary_service = SummaryOpenAI(openai_service)
-    transcript_service = Transcript(openai_service.client)
+    transcript_service = Transcript(openai_service)
     elevenlabs_service = ElevenLabsClient()
 
     register_pycord_command(
