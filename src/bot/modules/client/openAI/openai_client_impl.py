@@ -57,11 +57,11 @@ class OpenAiCLientImpl(ApiClient):
         if reasoning_level is not None:
             reasoning = {"effort": reasoning_level}
 
+        # Promt the model and get the initial response
         response, conversation_id = await self._create_initial_response(
             user_id, prompt, conversation_id, model_id, tool_definitions, reasoning
         )
-        self._record_usage(user_id, response)
-
+        self._record_usage(user_id, response)  # Record initial response usage
         while True:
             tool_outputs = await self._execute_tool_calls(response)
             if not tool_outputs:
@@ -74,7 +74,7 @@ class OpenAiCLientImpl(ApiClient):
                 reasoning=reasoning,
                 tools=tool_definitions,
             )
-            self._record_usage(user_id, response)
+            self._record_usage(user_id, response)  # Record follow-up response usage
 
     def _get_tool_definitions(self) -> list[dict]:
         tool_definitions = []
