@@ -1,6 +1,6 @@
 import discord
 
-from .askingOpenAI import OpenAiCLientImpl
+from .openai_client_impl import OpenAiCLientImpl
 from .prompts import summary_prompt
 
 

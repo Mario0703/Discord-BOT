@@ -1,9 +1,9 @@
 from unittest.mock import Mock, patch
 
-from bot.modules.client.API.isThereSuchDeal import Deals
+from bot.modules.client.API.is_there_such_deal import Deals
 
 
-@patch("bot.modules.client.API.isThereSuchDeal.requests.get")
+@patch("bot.modules.client.API.is_there_such_deal.requests.get")
 def test_api_request(mock_get):
     mock_response = Mock()
     mock_response.json.return_value = {

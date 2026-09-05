@@ -7,7 +7,7 @@ import pytest
 from openai import BadRequestError, NotFoundError
 
 from bot.storage.model_selections import ModelSelectionStore
-from bot.modules.client.openAI.askingOpenAI import OpenAiCLientImpl
+from bot.modules.client.openAI.openai_client_impl import OpenAiCLientImpl
 from bot.storage.token_usage import TokenUsage
 from bot.storage.user_conversations import UserConversations
 

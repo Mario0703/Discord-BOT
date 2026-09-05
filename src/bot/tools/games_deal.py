@@ -1,6 +1,6 @@
 from typing import Any
 
-from ..modules.client.API.isThereSuchDeal import Deals
+from ..modules.client.API.is_there_such_deal import Deals
 from .tool import tool
 
 
