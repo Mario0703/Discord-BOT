@@ -213,9 +213,12 @@ def test_set_user_model_saves_only_supported_selections(tmp_path: Path):
     rejected = service.set_user_model(ctx, "gpt-5.6-sol", "minimal")
 
     assert saved is not None
-    assert saved.get_selection() == ("gpt-5.6-sol", "high")
+    assert saved.model_name == "gpt-5.6-sol"
+    assert saved.reasoning_level == "high"
     assert rejected is None
-    assert selections.selections.get(str(12345)).get_selection() == ("gpt-5.6-sol", "high")
+    stored = selections.selections[str(12345)]
+    assert stored.model_name == "gpt-5.6-sol"
+    assert stored.reasoning_level == "high"
 
 
 def test_model_selection_store_returns_the_saved_selection(tmp_path: Path):
@@ -225,4 +228,5 @@ def test_model_selection_store_returns_the_saved_selection(tmp_path: Path):
     selection = service.model_selection_store.selections.get(str(12345))
 
     assert selection is not None
-    assert selection.get_selection() == ("gpt-5.6-terra", "medium")
+    assert selection.model_name == "gpt-5.6-terra"
+    assert selection.reasoning_level == "medium"

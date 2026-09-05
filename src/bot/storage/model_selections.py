@@ -19,17 +19,6 @@ class ModelSelection:
     model_name: str | None
     reasoning_level: str | None
 
-    def get_selection(self) -> tuple[str | None, str | None]:
-        return self.model_name, self.reasoning_level
-
-    def set_selection(self, model_name: str, reasoning_level: str | None) -> None:
-        self.model_name = model_name
-        self.reasoning_level = reasoning_level
-
-    def remove_selection(self) -> None:
-        self.model_name = None
-        self.reasoning_level = None
-
 
 def resolve_model_settings(selection: ModelSelection | None) -> tuple[str, str | None]:
     """Use a valid saved selection, otherwise return the bot defaults."""

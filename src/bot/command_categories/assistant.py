@@ -96,7 +96,8 @@ def register(bot, openai_service, top_deals_service, guild_ids):
             )
             return
 
-        model_id, reasoning_level = selection.get_selection()
+        model_id = selection.model_name
+        reasoning_level = selection.reasoning_level
         await ctx.respond(
             f"Your selected model is `{model_id}` with reasoning level "
             f"`{reasoning_level}`."
