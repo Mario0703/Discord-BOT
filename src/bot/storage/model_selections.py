@@ -19,29 +19,26 @@ class ModelSelection:
     model_name: str | None
     reasoning_level: str | None
 
-    def get_selection(self) -> tuple[str | None, str | None]:
-        return self.model_name, self.reasoning_level
 
-    def set_selection(self, model_name: str, reasoning_level: str | None) -> None:
-        self.model_name = model_name
-        self.reasoning_level = reasoning_level
-
-    def remove_selection(self) -> None:
-        self.model_name = None
-        self.reasoning_level = None
-
-
-def resolve_model_settings(selection: ModelSelection | None) -> tuple[str, str | None]:
+def resolve_model_settings(
+    selection: ModelSelection | None,
+) -> tuple[str, str | None]:
     """Use a valid saved selection, otherwise return the bot defaults."""
     model_id = DEFAULT_MODEL_ID
 
-    if selection is not None and selection.model_name in MODEL_REASONING_LEVELS:
+    has_valid_model = (
+        selection is not None and selection.model_name in MODEL_REASONING_LEVELS
+    )
+    if has_valid_model:
         model_id = selection.model_name
 
     supported_levels = MODEL_REASONING_LEVELS.get(model_id, [])
     reasoning_level = DEFAULT_REASONING_LEVEL
 
-    if selection is not None and selection.reasoning_level in supported_levels:
+    has_valid_reasoning = (
+        selection is not None and selection.reasoning_level in supported_levels
+    )
+    if has_valid_reasoning:
         reasoning_level = selection.reasoning_level
     elif reasoning_level not in supported_levels:
         reasoning_level = None
@@ -63,21 +60,20 @@ class ModelSelectionStore:
         with self.file_path.open("r", encoding="utf-8") as file:
             saved_selections = json.load(file)
 
-        return {
-            user_id: ModelSelection(**selection)
-            for user_id, selection in saved_selections.items()
-        }
+        selections = {}
+        for user_id, selection in saved_selections.items():
+            selections[user_id] = ModelSelection(**selection)
+
+        return selections
 
     def _save(self) -> None:
-        saved_selections = {
-            user_id: asdict(selection) for user_id, selection in self.selections.items()
-        }
+        saved_selections = {}
+
+        for user_id, selection in self.selections.items():
+            saved_selections[user_id] = asdict(selection)
 
         with self.file_path.open("w", encoding="utf-8") as file:
             json.dump(saved_selections, file, indent=2)
-
-    def get_selection(self, user_id: str | int) -> ModelSelection | None:
-        return self.selections.get(str(user_id))
 
     def set_selection(
         self,

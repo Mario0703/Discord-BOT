@@ -1,9 +1,11 @@
+import json
 from unittest.mock import Mock, patch
 
-from bot.modules.client.API.isThereSuchDeal import Deals
+from bot.modules.client.API.is_there_such_deal import Deals
 
 
-@patch("bot.modules.client.API.isThereSuchDeal.requests.get")
+@patch.dict("os.environ", {"ITAD_API_KEY": "test-api-key"})
+@patch("bot.modules.client.API.is_there_such_deal.requests.get")
 def test_api_request(mock_get):
     mock_response = Mock()
     mock_response.json.return_value = {
@@ -12,9 +14,7 @@ def test_api_request(mock_get):
     }
     mock_get.return_value = mock_response
 
-    result = Deals(country="DK", shop="61", discount_range=(80, 100)).get_steam_deals(
-        "test-api-key"
-    )
+    result = Deals(country="DK", shop="61", discount_range=(80, 100)).get_steam_deals()
 
     assert result == {
         "title": "Example Game",
@@ -26,7 +26,7 @@ def test_api_request(mock_get):
         params={
             "country": "DK",
             "shops": "61",
-            "cut": "80..100",
+            "filter": json.dumps({"cut": {"min": 80, "max": 100}}),
             "offset": 0,
             "limit": 20,
             "sort": "-cut",

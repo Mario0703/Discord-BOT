@@ -3,12 +3,15 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "hello"
+name = "discord-ai-bot"
 version = "0.1.0"
 description = "A Discord bot built with Pycord and the OpenAI SDK."
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = ["elevenlabs"]
+dependencies = ["elevenlabs", "openai", "py-cord", "python-dotenv"]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-asyncio", "ruff", "black", "mypy"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -6,6 +6,7 @@ from bot.command_categories.assistant import register as register_assistant
 from bot.command_categories.general import register as register_general
 from bot.command_categories.technical import register as register_technical
 from bot.command_categories.voice_assistant import register as register_voice
+from bot.tools.message_formatting import MessageFormatting
 
 GUILD_IDS = [770744107559682108]
 VOICE_ASSISTANT_DIR = (
@@ -84,7 +85,7 @@ def register_pycord_command(
                 inline=False,
             )
 
-        await ctx.respond(embed=embed)
+        await MessageFormatting.send_response_embed(ctx, embed)
 
     @bot.event
     async def on_ready():

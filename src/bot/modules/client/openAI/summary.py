@@ -1,14 +1,14 @@
-from openai import AsyncOpenAI
+import discord
 
+from .openai_client_impl import OpenAiCLientImpl
 from .prompts import summary_prompt
 
 
 class SummaryOpenAI:
     """Create summaries of messages collected from Discord channels."""
 
-    def __init__(self, client: AsyncOpenAI, model: str = "gpt-5.6-luna"):
-        self.client = client
-        self.model = model
+    def __init__(self, openai_service: OpenAiCLientImpl):
+        self.openai_service = openai_service
 
     async def summerice_channel_history_start_to_end(
         self,
@@ -16,9 +16,7 @@ class SummaryOpenAI:
         start: str,
         end: str,
         messages: str,
+        ctx: discord.ApplicationContext,
     ) -> str:
-        response = await self.client.responses.create(
-            model=self.model,
-            input=summary_prompt(channel_name, start, end, messages),
-        )
-        return response.output_text
+        prompt = summary_prompt(channel_name, start, end, messages)
+        return await self.openai_service.generate_repsone_from_openAI(prompt, ctx)
