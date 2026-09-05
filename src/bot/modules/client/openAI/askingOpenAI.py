@@ -46,7 +46,7 @@ class OpenAiCLientImpl(ApiClient):
         "Generate a response from OpenAI, using the user's selected model and reasoning level, and executing any tool calls."
         user_id = User(ctx).get_discord_id()
         conversation_id = self.user_conversations.get_conversation(user_id)
-        selection = self.model_selection_store.get_selection(user_id)
+        selection = self.model_selection_store.selections.get(str(user_id))
         model_id, reasoning_level = resolve_model_settings(selection)
 
         if conversation_id is None:
@@ -196,7 +196,7 @@ class OpenAiCLientImpl(ApiClient):
             model_id,
             reasoning_level,
         )
-        return self.model_selection_store.get_selection(user_id)
+        return self.model_selection_store.selections.get(str(user_id))
 
     async def _create_conversation(self, user_id: str) -> str:
         conversation = await self.client.conversations.create()

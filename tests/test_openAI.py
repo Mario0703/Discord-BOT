@@ -215,14 +215,14 @@ def test_set_user_model_saves_only_supported_selections(tmp_path: Path):
     assert saved is not None
     assert saved.get_selection() == ("gpt-5.6-sol", "high")
     assert rejected is None
-    assert selections.get_selection(12345).get_selection() == ("gpt-5.6-sol", "high")
+    assert selections.selections.get(str(12345)).get_selection() == ("gpt-5.6-sol", "high")
 
 
 def test_model_selection_store_returns_the_saved_selection(tmp_path: Path):
     selections = ModelSelectionStore(tmp_path / "model_selections.json")
     selections.set_selection(12345, "gpt-5.6-terra", "medium")
     service = OpenAiCLientImpl(client=Mock(), model_selection_store=selections)
-    selection = service.model_selection_store.get_selection(12345)
+    selection = service.model_selection_store.selections.get(str(12345))
 
     assert selection is not None
     assert selection.get_selection() == ("gpt-5.6-terra", "medium")

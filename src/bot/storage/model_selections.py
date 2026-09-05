@@ -76,9 +76,6 @@ class ModelSelectionStore:
         with self.file_path.open("w", encoding="utf-8") as file:
             json.dump(saved_selections, file, indent=2)
 
-    def get_selection(self, user_id: str | int) -> ModelSelection | None:
-        return self.selections.get(str(user_id))
-
     def set_selection(
         self,
         user_id: str | int,

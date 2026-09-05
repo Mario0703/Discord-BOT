@@ -87,7 +87,7 @@ def register(bot, openai_service, top_deals_service, guild_ids):
     )
     async def show_my_model(ctx: discord.ApplicationContext):
         user_id = User(ctx).get_discord_id()
-        selection = openai_service.model_selection_store.get_selection(user_id)
+        selection = openai_service.model_selection_store.selections.get(str(user_id))
 
         if selection is None:
             await ctx.respond(
