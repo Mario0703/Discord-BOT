@@ -3,6 +3,8 @@ import json
 import discord
 from openai import AsyncOpenAI, BadRequestError, NotFoundError
 
+from bot.errors import MissingConfigurationError
+from bot.Settings.settings import Settings
 from bot.tools.tool import tool as Tool
 
 from ....storage.model_selections import (
@@ -13,13 +15,10 @@ from ....storage.model_selections import (
 )
 from ....storage.token_usage import TokenUsage
 from ....storage.user_conversations import UserConversations
-from ..API.api_client import ApiClient
 from .prompts import assistant_prompt
 
 
-class OpenAiCLientImpl(ApiClient):
-    API_KEY_ENV_VAR = "API_KEY"
-
+class OpenAiCLientImpl:
     def __init__(
         self,
         tools: list[Tool] | None = None,
@@ -27,6 +26,7 @@ class OpenAiCLientImpl(ApiClient):
         user_conversations: UserConversations | None = None,
         token_usage: TokenUsage | None = None,
         model_selection_store: ModelSelectionStore | None = None,
+        settings: Settings | None = None,
     ):
         self.user_conversations = user_conversations or UserConversations()
         self.token_usage = token_usage or TokenUsage()
@@ -36,8 +36,12 @@ class OpenAiCLientImpl(ApiClient):
         self.tools = tools or []
         if client is not None:
             self.client = client
+        elif settings is not None:
+            self.client = AsyncOpenAI(api_key=settings.openai_api_key)
         else:
-            self.client = AsyncOpenAI(api_key=self.get_api_key())
+            raise MissingConfigurationError(
+                "OpenAI settings are required when no client is provided."
+            )
 
     async def generate_repsone_from_openAI(
         self, prompt: str, ctx: discord.ApplicationContext
