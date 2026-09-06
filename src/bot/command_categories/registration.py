@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import discord
 
@@ -9,10 +10,7 @@ from bot.command_categories.voice_assistant import register as register_voice
 from bot.tools.message_formatting import MessageFormatting
 
 GUILD_IDS = [770744107559682108]
-VOICE_ASSISTANT_DIR = (
-    r"F:\Python Projects\Discord Bot\Discord-BOT\src\voice channel recordings"
-)
-TRANSCRIPTS_DIR = r"F:\Python Projects\Discord Bot\Discord-BOT\src\bot\transcripts"
+DATA_DIR = Path("data")
 
 
 def format_code_review(review: str) -> str:
@@ -55,8 +53,7 @@ def register_pycord_command(
         bot,
         transcript_service,
         elevenlabs_service,
-        VOICE_ASSISTANT_DIR,
-        TRANSCRIPTS_DIR,
+        DATA_DIR,
         GUILD_IDS,
     )
 
