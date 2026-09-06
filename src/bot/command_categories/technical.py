@@ -38,7 +38,9 @@ def register(
         report = openai_service.token_usage.report()
         if not report:
             await MessageFormatting.send_response(
-                ctx, "No token usage has been recorded in the last 24 hours."
+                ctx,
+                "No token usage has been recorded in the last 24 hours.",
+                allowed_mentions=discord.AllowedMentions.none(),
             )
             return
         lines = ["Token usage in the last 24 hours:"]
@@ -48,4 +50,8 @@ def register(
                 f"<@{user_id}> — input: {usage['input']}, "
                 f"output: {usage['output']}, total: {total}"
             )
-        await MessageFormatting.send_response(ctx, "\n".join(lines))
+        await MessageFormatting.send_response(
+            ctx,
+            "\n".join(lines),
+            allowed_mentions=discord.AllowedMentions.none(),
+        )
