@@ -5,6 +5,9 @@ import discord
 from ..tools.message_formatting import MessageFormatting
 from datetime import datetime, timedelta
 
+MAX_MESSAGE_LENGTH = 1000
+MAX_TEXT_LENGTH = 50_000
+
 
 def register(bot, summary_service, guild_ids, summary_date_range):
     general = bot.create_group("general", "General bot commands", guild_ids=guild_ids)
@@ -37,6 +40,25 @@ def register(bot, summary_service, guild_ids, summary_date_range):
         if end_date - start_date > timedelta(days=7):
             await MessageFormatting.send_response(
                 ctx, "The date range cannot exceed 7 days."
+            )
+            return
+
+        messages = []
+        async for message in ctx.channel.history(
+            before=end_date,
+            start=start_date,
+            limit=None,
+            oldest_first=True,
+            limit=MAX_MESSAGE_LENGTH + 1,
+        ):
+            messages.append(
+                f"[{message.created_at.isoformat()}] {message.author}: "
+                f"{message.content}"
+            )
+        if len(messages) > MAX_MESSAGE_LENGTH:
+            await MessageFormatting.send_response(
+                ctx,
+                f"The number of messages in the specified range exceeds the limit of {MAX_MESSAGE_LENGTH}. Please narrow down the date range.",
             )
             return
 
