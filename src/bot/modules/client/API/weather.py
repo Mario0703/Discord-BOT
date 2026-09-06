@@ -3,7 +3,7 @@ from urllib.parse import quote
 
 import requests
 
-from bot.errors import MissingConfigurationError
+from bot.errors import MissingConfigurationError, OptionalFeatureUnavailableError
 from bot.Settings.settings import Settings
 
 
@@ -21,7 +21,9 @@ class OpenWeather:
         if settings is None:
             raise MissingConfigurationError("Settings are required.")
         if not settings.openweather_api_key:
-            raise MissingConfigurationError("OpenWeather API key is required.")
+            raise OptionalFeatureUnavailableError(
+                "Weather is unavailable because OPENWEATHER_API_KEY is not configured."
+            )
 
         self.city_name = city_name
         self.state_code = state_code

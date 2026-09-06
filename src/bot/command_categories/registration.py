@@ -42,9 +42,7 @@ def register_pycord_command(
     elevenlabs_service,
 ):
 
-    register_assistant(
-        bot, openai_service, top_deals_service, settings.guild_ids
-    )
+    register_assistant(bot, openai_service, top_deals_service, settings)
     register_general(bot, summary_service, settings, summary_date_range)
     register_technical(
         bot, openai_service, code_review_service, settings, format_code_review

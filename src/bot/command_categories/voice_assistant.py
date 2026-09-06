@@ -138,6 +138,13 @@ def register(bot, transcript_service, elevenlabs_service, settings: Settings):
         description="Read a saved transcript aloud in your voice channel",
     )
     async def play_transcript(ctx: discord.ApplicationContext, name: str):
+        if not settings.elevenlabs_api_key:
+            await MessageFormatting.send_response(
+                ctx,
+                "ElevenLabs speech is unavailable because ELEVENLABS_API_KEY "
+                "is not configured.",
+            )
+            return
         if ctx.author.voice is None or ctx.author.voice.channel is None:
             await MessageFormatting.send_response(
                 ctx, "You must be in a voice channel first."
@@ -190,6 +197,13 @@ def register(bot, transcript_service, elevenlabs_service, settings: Settings):
         description="Convert text to speech and play it in your voice channel",
     )
     async def eleven_labs(ctx: discord.ApplicationContext, text: str):
+        if not settings.elevenlabs_api_key:
+            await MessageFormatting.send_response(
+                ctx,
+                "ElevenLabs speech is unavailable because ELEVENLABS_API_KEY "
+                "is not configured.",
+            )
+            return
         if ctx.author.voice is None or ctx.author.voice.channel is None:
             await MessageFormatting.send_response(
                 ctx, "You must be in a voice channel first."

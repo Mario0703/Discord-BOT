@@ -1,5 +1,6 @@
 import discord
 
+from bot.errors import OptionalFeatureUnavailableError
 from bot.Settings.settings import Settings
 
 from ..tools.message_formatting import MessageFormatting
@@ -37,7 +38,11 @@ def register(bot, openai_service, top_deals_service, settings: Settings):
     @assistant.command(name="deals", description="Get the top Steam deals")
     async def deals(ctx: discord.ApplicationContext):
         await ctx.defer()
-        text = await top_deals_service.get_top_steam_deals(ctx)
+        try:
+            text = await top_deals_service.get_top_steam_deals(ctx)
+        except OptionalFeatureUnavailableError as error:
+            await MessageFormatting.send_followup(ctx, str(error))
+            return
         await MessageFormatting.send_followup(
             ctx, text, allowed_mentions=discord.AllowedMentions.none()
         )

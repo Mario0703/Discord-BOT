@@ -1,4 +1,5 @@
 import os
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -47,6 +48,27 @@ def _guild_ids() -> tuple[int, ...]:
     if not guild_ids:
         raise RuntimeError("GUILD_IDS must contain at least one server ID.")
     return guild_ids
+
+
+def _check_api_keys_settings(settings: Settings) -> bool:
+    """Warn about missing optional provider keys without stopping startup."""
+    optional_keys = {
+        "ELEVENLABS_API_KEY": settings.elevenlabs_api_key,
+        "ITAD_API_KEY": settings.itad_api_key,
+        "OPENWEATHER_API_KEY": settings.openweather_api_key,
+    }
+    missing_keys = [name for name, value in optional_keys.items() if not value]
+    if not missing_keys:
+        return True
+
+    warnings.warn(
+        f"{len(missing_keys)} optional API key(s) are missing: "
+        f"{', '.join(missing_keys)}. The bot will start, but the related "
+        "features will be unavailable.",
+        RuntimeWarning,
+        stacklevel=2,
+    )
+    return False
 
 
 def load_settings() -> Settings:

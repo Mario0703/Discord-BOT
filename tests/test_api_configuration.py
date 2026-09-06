@@ -2,7 +2,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from bot.errors import MissingConfigurationError
+from bot.errors import MissingConfigurationError, OptionalFeatureUnavailableError
 from bot.modules.client.API.is_there_such_deal import Deals
 from bot.modules.client.API.weather import OpenWeather
 from bot.modules.client.ElevenLabs.elevenlabs import ElevenLabsClient
@@ -19,30 +19,36 @@ def _settings(**overrides) -> Settings:
     return Settings(**values)
 
 
+def test_openai_reports_missing_required_api_key():
+    with pytest.raises(
+        MissingConfigurationError,
+        match="OpenAI API key is required.",
+    ):
+        OpenAiCLientImpl(
+            client=Mock(),
+            settings=_settings(openai_api_key=""),
+        )
+
+
 @pytest.mark.parametrize(
-    ("create_client", "message"),
+    ("use_feature", "message"),
     [
         (
-            lambda: OpenAiCLientImpl(
-                client=Mock(),
-                settings=_settings(openai_api_key=""),
+            lambda: ElevenLabsClient(settings=_settings()).convert_text_to_speech(
+                "Hello"
             ),
-            "OpenAI API key is required.",
-        ),
-        (
-            lambda: ElevenLabsClient(settings=_settings()),
-            "ElevenLabs API key is required.",
+            "ElevenLabs speech is unavailable",
         ),
         (
             lambda: OpenWeather("Copenhagen", "", "DK", settings=_settings()),
-            "OpenWeather API key is required.",
+            "Weather is unavailable",
         ),
         (
             lambda: Deals("DK", 61, (80, 100), settings=_settings()),
-            "IsThereAnyDeal API key is required.",
+            "Deals are unavailable",
         ),
     ],
 )
-def test_clients_report_missing_api_keys(create_client, message):
-    with pytest.raises(MissingConfigurationError, match=message):
-        create_client()
+def test_optional_features_report_missing_api_keys(use_feature, message):
+    with pytest.raises(OptionalFeatureUnavailableError, match=message):
+        use_feature()

@@ -3,7 +3,7 @@ from collections.abc import Sequence
 
 import requests
 
-from bot.errors import MissingConfigurationError
+from bot.errors import MissingConfigurationError, OptionalFeatureUnavailableError
 from bot.Settings.settings import Settings
 
 
@@ -56,7 +56,9 @@ class Deals:
         if settings is None:
             raise MissingConfigurationError("Settings are required.")
         if not settings.itad_api_key:
-            raise MissingConfigurationError("IsThereAnyDeal API key is required.")
+            raise OptionalFeatureUnavailableError(
+                "Deals are unavailable because ITAD_API_KEY is not configured."
+            )
 
         self.api_key = settings.itad_api_key
 

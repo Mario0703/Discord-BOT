@@ -4,7 +4,7 @@ from pathlib import Path
 from elevenlabs.client import ElevenLabs
 from elevenlabs.play import play
 
-from bot.errors.errors import MissingConfigurationError
+from bot.errors import MissingConfigurationError, OptionalFeatureUnavailableError
 from bot.Settings.settings import Settings
 
 
@@ -19,17 +19,24 @@ class ElevenLabsClient:
     ):
         if settings is None:
             raise MissingConfigurationError("Settings are required.")
-        if not settings.elevenlabs_api_key:
-            raise MissingConfigurationError("ElevenLabs API key is required.")
 
         self.settings = settings
         self.voice_id = voice_id
         self.model_id = model_id
         self.speech_dir = settings.data_dir / "speech"
-        self.client = ElevenLabs(api_key=settings.elevenlabs_api_key)
+        self.client = (
+            ElevenLabs(api_key=settings.elevenlabs_api_key)
+            if settings.elevenlabs_api_key
+            else None
+        )
 
     def convert_text_to_speech(self, text: str) -> Iterable[bytes]:
         """Return generated audio chunks for the supplied text."""
+        if self.client is None:
+            raise OptionalFeatureUnavailableError(
+                "ElevenLabs speech is unavailable because ELEVENLABS_API_KEY "
+                "is not configured."
+            )
         if not text or not text.strip():
             raise ValueError("Text to convert cannot be empty")
 
