@@ -68,10 +68,22 @@ class OpenAiCLientImpl:
             user_id, prompt, conversation_id, model_id, tool_definitions, reasoning
         )
         self._record_usage(user_id, response)  # Record initial response usage
+        tool_call_count = 0
         while True:
+            requested_tool_calls = sum(
+                output_item.type == "function_call"
+                for output_item in response.output
+            )
+            if tool_call_count + requested_tool_calls > self.settings.max_tool_calls:
+                raise RuntimeError(
+                    "OpenAI exceeded the configured tool-call limit of "
+                    f"{self.settings.max_tool_calls}."
+                )
+
             tool_outputs = await self._execute_tool_calls(response)
             if not tool_outputs:
                 return response.output_text
+            tool_call_count += len(tool_outputs)
 
             response = await self.client.responses.create(
                 model=model_id,

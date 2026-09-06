@@ -53,8 +53,7 @@ def register_pycord_command(
         bot,
         transcript_service,
         elevenlabs_service,
-        settings.data_dir,
-        settings.guild_ids,
+        settings,
     )
 
     @bot.slash_command(

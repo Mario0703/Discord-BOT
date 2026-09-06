@@ -2,11 +2,10 @@ from types import SimpleNamespace
 
 from bot.command_categories.technical import _is_administrator
 from bot.command_categories.voice_assistant import (
-    MAX_TTS_TEXT_LENGTH,
-    MAX_UPLOAD_SIZE,
     _transcript_path,
     _user_data_dir,
 )
+from tests.helpers import make_test_settings
 
 
 def test_user_data_dir_is_scoped_to_guild_and_user(tmp_path):
@@ -28,8 +27,10 @@ def test_transcript_path_cannot_escape_user_directory(tmp_path):
 
 
 def test_voice_limits_are_configured():
-    assert MAX_UPLOAD_SIZE == 10 * 1024 * 1024
-    assert MAX_TTS_TEXT_LENGTH == 5_000
+    settings = make_test_settings()
+
+    assert settings.upload_max_bytes == 10 * 1024 * 1024
+    assert settings.tts_max_characters == 5_000
 
 
 def test_only_administrators_can_use_admin_commands():

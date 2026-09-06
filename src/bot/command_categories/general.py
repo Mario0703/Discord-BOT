@@ -7,12 +7,12 @@ from bot.Settings.settings import Settings
 
 from ..tools.message_formatting import MessageFormatting
 
-MAX_MESSAGE_COUNT = 1_000
-MAX_CHARACTER_COUNT = 50_000
-
 
 def _validate_summary_dates(
-    start: str, end: str, summary_date_range
+    start: str,
+    end: str,
+    summary_date_range,
+    settings: Settings,
 ) -> tuple[datetime, datetime, str | None]:
     try:
         start_date, end_date = summary_date_range(start, end)
@@ -30,8 +30,12 @@ def _validate_summary_dates(
             datetime.min,
             "You cannot summarize messages from the future.",
         )
-    if end_date - start_date > timedelta(days=7):
-        return datetime.min, datetime.min, "The date range cannot exceed 7 days."
+    if end_date - start_date > timedelta(days=settings.summary_max_days):
+        return (
+            datetime.min,
+            datetime.min,
+            f"The date range cannot exceed {settings.summary_max_days} days.",
+        )
     return start_date, end_date, None
 
 
@@ -43,30 +47,31 @@ def _find_channel(ctx: discord.ApplicationContext, channel_name: str):
 
 
 async def _collect_summary_messages(
-    channel, start_date, end_date
+    channel, start_date, end_date, settings: Settings
 ) -> tuple[str, str | None]:
     messages = []
     async for message in channel.history(
         after=start_date,
         before=end_date,
         oldest_first=True,
-        limit=MAX_MESSAGE_COUNT + 1,
+        limit=settings.summary_max_messages + 1,
     ):
         messages.append(
             f"[{message.created_at.isoformat()}] {message.author}: {message.content}"
         )
 
-    if len(messages) > MAX_MESSAGE_COUNT:
+    if len(messages) > settings.summary_max_messages:
         return "", (
-            f"The number of messages exceeds the limit of {MAX_MESSAGE_COUNT}. "
+            "The number of messages exceeds the limit of "
+            f"{settings.summary_max_messages}. "
             "Please narrow down the date range."
         )
 
     transcript = "\n".join(messages) or "No messages found."
-    if len(transcript) > MAX_CHARACTER_COUNT:
+    if len(transcript) > settings.summary_max_characters:
         return "", (
             f"The summary text exceeds the limit of "
-            f"{MAX_CHARACTER_COUNT:,} characters. "
+            f"{settings.summary_max_characters:,} characters. "
             "Please narrow down the date range."
         )
     return transcript, None
@@ -86,7 +91,7 @@ def register(bot, summary_service, settings: Settings, summary_date_range):
         ctx: discord.ApplicationContext, start: str, end: str, channel_name: str
     ):
         start_date, end_date, error = _validate_summary_dates(
-            start, end, summary_date_range
+            start, end, summary_date_range, settings
         )
         if error:
             await MessageFormatting.send_response(
@@ -114,7 +119,7 @@ def register(bot, summary_service, settings: Settings, summary_date_range):
 
         await ctx.defer()
         messages, error = await _collect_summary_messages(
-            channel, start_date, end_date
+            channel, start_date, end_date, settings
         )
         if error:
             await MessageFormatting.send_followup(
