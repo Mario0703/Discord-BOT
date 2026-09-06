@@ -1,5 +1,7 @@
 import discord
 
+from bot.Settings import settings
+
 from ..tools.message_formatting import MessageFormatting
 
 
@@ -8,10 +10,10 @@ def _is_administrator(ctx: discord.ApplicationContext) -> bool:
 
 
 def register(
-    bot, openai_service, code_review_service, guild_ids, format_code_review
+    bot, openai_service, code_review_service, settings: settings.Settings, format_code_review
 ) -> None:
     technical = bot.create_group(
-        "technical", "Tech related commands", guild_ids=guild_ids
+        "technical", "Tech related commands", guild_ids=settings.guild_ids
     )
 
     @technical.command(name="code_review", description="Review source code")

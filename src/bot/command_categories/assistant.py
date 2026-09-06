@@ -1,11 +1,13 @@
 import discord
 
+from bot.Settings.settings import Settings
+
 from ..tools.message_formatting import MessageFormatting
 
 
-def register(bot, openai_service, top_deals_service, guild_ids):
+def register(bot, openai_service, top_deals_service, settings: Settings):
     assistant = bot.create_group(
-        "assistant", "AI assistant commands", guild_ids=guild_ids
+        "assistant", "AI assistant commands", guild_ids=settings.guild_ids
     )
 
     @assistant.command(name="ask", description="Ask Luna a question")

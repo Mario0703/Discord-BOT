@@ -9,9 +9,6 @@ from bot.command_categories.technical import register as register_technical
 from bot.command_categories.voice_assistant import register as register_voice
 from bot.tools.message_formatting import MessageFormatting
 
-GUILD_IDS = [770744107559682108]
-DATA_DIR = Path("data")
-
 
 def format_code_review(review: str) -> str:
     review = review.replace("\\r\\n", "\n").replace("\\n", "\n")
@@ -36,6 +33,7 @@ def summary_date_range(start: str, end: str) -> tuple[datetime, datetime]:
 
 def register_pycord_command(
     bot: discord.Bot,
+    guild_ids: tuple[int, ...],
     openai_service,
     top_deals_service,
     code_review_service,
@@ -44,23 +42,23 @@ def register_pycord_command(
     elevenlabs_service,
 ):
 
-    register_assistant(bot, openai_service, top_deals_service, GUILD_IDS)
-    register_general(bot, summary_service, GUILD_IDS, summary_date_range)
+    register_assistant(bot, openai_service, top_deals_service, guild_ids)
+    register_general(bot, summary_service, guild_ids, summary_date_range)
     register_technical(
-        bot, openai_service, code_review_service, GUILD_IDS, format_code_review
+        bot, openai_service, code_review_service, guild_ids, format_code_review
     )
     register_voice(
         bot,
         transcript_service,
         elevenlabs_service,
-        DATA_DIR,
-        GUILD_IDS,
+        Path("data"),
+        guild_ids,
     )
 
     @bot.slash_command(
         name="help",
         description="Show all available bot commands",
-        guild_ids=GUILD_IDS,
+        guild_ids=guild_ids,
     )
     async def help_command(ctx: discord.ApplicationContext):
         embed = discord.Embed(

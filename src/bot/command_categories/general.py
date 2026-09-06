@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 
 import discord
 
+from bot.Settings.settings import Settings
+
 from ..tools.message_formatting import MessageFormatting
 
 MAX_MESSAGE_COUNT = 1_000
@@ -70,8 +72,8 @@ async def _collect_summary_messages(
     return transcript, None
 
 
-def register(bot, summary_service, guild_ids, summary_date_range):
-    general = bot.create_group("general", "General bot commands", guild_ids=guild_ids)
+def register(bot, summary_service, settings: Settings, summary_date_range):
+    general = bot.create_group("general", "General bot commands", guild_ids=settings.guild_ids)
 
     @general.command(name="hello", description="Say hello")
     async def hello(ctx: discord.ApplicationContext):

@@ -32,6 +32,7 @@ def create_discord_bot(settings: Settings) -> discord.Bot:
 
     register_pycord_command(
         bot,
+        settings.guild_ids,
         openai_service,
         top_deals_service,
         code_review_service,
