@@ -3,6 +3,10 @@ import discord
 from ..tools.message_formatting import MessageFormatting
 
 
+def _is_administrator(ctx: discord.ApplicationContext) -> bool:
+    return ctx.guild is not None and ctx.author.guild_permissions.administrator
+
+
 def register(
     bot, openai_service, code_review_service, guild_ids, format_code_review
 ) -> None:
@@ -28,10 +32,11 @@ def register(
     )
     async def token_report(ctx: discord.ApplicationContext):
 
-        if ctx.guild is None or ctx.author.id != ctx.guild.owner_id:
+        if not _is_administrator(ctx):
             await MessageFormatting.send_response(
                 ctx,
-                "Only the server owner can use this command.",
+                "Only administrators can use this command.",
+                allowed_mentions=discord.AllowedMentions.none(),
             )
             return
 

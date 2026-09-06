@@ -56,7 +56,9 @@ def register(bot, transcript_service, elevenlabs_service, data_dir, guild_ids):
         message = "OpenAI-generated transcripts:\n" + "\n".join(
             f"• {p.name}" for p in files
         )
-        await MessageFormatting.send_response(ctx, message)
+        await MessageFormatting.send_response(
+            ctx, message, allowed_mentions=discord.AllowedMentions.none()
+        )
 
     @voice.command(
         name="get_transcript", description="Send a saved transcript to you as a file"
@@ -65,7 +67,9 @@ def register(bot, transcript_service, elevenlabs_service, data_dir, guild_ids):
         path = _transcript_path(_user_transcripts_dir(data_dir, ctx), name)
         if path is None or not path.is_file():
             await MessageFormatting.send_response(
-                ctx, f"I couldn't find the transcript `{Path(name).stem}.txt`."
+                ctx,
+                f"I couldn't find the transcript `{Path(name).stem}.txt`.",
+                allowed_mentions=discord.AllowedMentions.none(),
             )
             return
         await ctx.defer()
@@ -74,15 +78,19 @@ def register(bot, transcript_service, elevenlabs_service, data_dir, guild_ids):
                 ctx.author,
                 f"Here is the transcript `{path.name}`.",
                 file=discord.File(str(path)),
+                allowed_mentions=discord.AllowedMentions.none(),
             )
             await MessageFormatting.send_followup(
-                ctx, "I sent the transcript to your direct messages."
+                ctx,
+                "I sent the transcript to your direct messages.",
+                allowed_mentions=discord.AllowedMentions.none(),
             )
         except discord.Forbidden:
             await MessageFormatting.send_followup(
                 ctx,
                 "I couldn't send you a direct message. "
                 "Please enable DMs from server members.",
+                allowed_mentions=discord.AllowedMentions.none(),
             )
 
     @voice.command(
@@ -138,7 +146,9 @@ def register(bot, transcript_service, elevenlabs_service, data_dir, guild_ids):
         path = _transcript_path(_user_transcripts_dir(data_dir, ctx), name)
         if path is None or not path.is_file():
             await MessageFormatting.send_response(
-                ctx, f"I couldn't find the transcript `{Path(name).stem}.txt`."
+                ctx,
+                f"I couldn't find the transcript `{Path(name).stem}.txt`.",
+                allowed_mentions=discord.AllowedMentions.none(),
             )
             return
         await ctx.defer()
@@ -164,7 +174,9 @@ def register(bot, transcript_service, elevenlabs_service, data_dir, guild_ids):
                 client.stop()
             client.play(discord.FFmpegPCMAudio(str(audio_path)))
             await MessageFormatting.send_followup(
-                ctx, f"Playing transcript `{path.name}`."
+                ctx,
+                f"Playing transcript `{path.name}`.",
+                allowed_mentions=discord.AllowedMentions.none(),
             )
         except Exception as error:
             print(f"Transcript playback failed: {error}")

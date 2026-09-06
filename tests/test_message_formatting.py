@@ -28,5 +28,13 @@ class MessageFormattingTests(unittest.TestCase):
 
         asyncio.run(MessageFormatting.send_response(ctx, message))
 
-        ctx.respond.assert_awaited_once_with("a" * 2_000)
-        ctx.followup.send.assert_awaited_once_with("a")
+        ctx.respond.assert_awaited_once()
+        ctx.followup.send.assert_awaited_once()
+        assert ctx.respond.await_args.args == ("a" * 2_000,)
+        assert ctx.followup.send.await_args.args == ("a",)
+        assert ctx.respond.await_args.kwargs["allowed_mentions"].to_dict() == {
+            "parse": []
+        }
+        assert ctx.followup.send.await_args.kwargs["allowed_mentions"].to_dict() == {
+            "parse": []
+        }

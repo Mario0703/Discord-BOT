@@ -12,7 +12,9 @@ def register(bot, openai_service, top_deals_service, guild_ids):
     async def ask_openai(ctx: discord.ApplicationContext, question: str):
         await ctx.defer()
         answer = await openai_service.generate_repsone_from_openAI(question, ctx)
-        await MessageFormatting.send_followup(ctx, answer)
+        await MessageFormatting.send_followup(
+            ctx, answer, allowed_mentions=discord.AllowedMentions.none()
+        )
 
     @assistant.command(
         name="clear_conversation", description="Clear your Luna conversation history"
@@ -26,13 +28,17 @@ def register(bot, openai_service, top_deals_service, guild_ids):
         else:
             response_message = "You do not have any conversation history to clear."
 
-        await MessageFormatting.send_followup(ctx, response_message)
+        await MessageFormatting.send_followup(
+            ctx, response_message, allowed_mentions=discord.AllowedMentions.none()
+        )
 
     @assistant.command(name="deals", description="Get the top Steam deals")
     async def deals(ctx: discord.ApplicationContext):
         await ctx.defer()
         text = await top_deals_service.get_top_steam_deals(ctx)
-        await MessageFormatting.send_followup(ctx, text)
+        await MessageFormatting.send_followup(
+            ctx, text, allowed_mentions=discord.AllowedMentions.none()
+        )
 
     @assistant.command(name="model", description="List the models available for openAI")
     async def list_models(ctx: discord.ApplicationContext):
@@ -41,7 +47,9 @@ def register(bot, openai_service, top_deals_service, guild_ids):
 
         if not models:
             await MessageFormatting.send_followup(
-                ctx, "None of the configured OpenAI models are available."
+                ctx,
+                "None of the configured OpenAI models are available.",
+                allowed_mentions=discord.AllowedMentions.none(),
             )
             return
 
@@ -77,12 +85,14 @@ def register(bot, openai_service, top_deals_service, guild_ids):
             await MessageFormatting.send_followup(
                 ctx,
                 f"Model set to `{model_id}` with reasoning level `{reasoning_level}`.",
+                allowed_mentions=discord.AllowedMentions.none(),
             )
         else:
             await MessageFormatting.send_followup(
                 ctx,
                 "That model and reasoning-level combination is not supported. "
                 "Use `/assistant model` to see the available options.",
+                allowed_mentions=discord.AllowedMentions.none(),
             )
 
     @assistant.command(
@@ -98,6 +108,7 @@ def register(bot, openai_service, top_deals_service, guild_ids):
                 ctx,
                 "You have not selected a model. The bot is using the default: "
                 "`gpt-5.6-luna` with `medium` reasoning.",
+                allowed_mentions=discord.AllowedMentions.none(),
             )
             return
 
@@ -107,4 +118,5 @@ def register(bot, openai_service, top_deals_service, guild_ids):
             ctx,
             f"Your selected model is `{model_id}` with reasoning level "
             f"`{reasoning_level}`.",
+            allowed_mentions=discord.AllowedMentions.none(),
         )
