@@ -30,6 +30,8 @@ class OpenAiCLientImpl:
     ):
         if settings is None:
             raise MissingConfigurationError("Settings are required.")
+        if not settings.openai_api_key:
+            raise MissingConfigurationError("OpenAI API key is required.")
 
         self.settings = settings
         self.user_conversations = user_conversations or UserConversations()
@@ -38,6 +40,10 @@ class OpenAiCLientImpl:
         self.input_token_count = 0
         self.output_token_count = 0
         self.tools = tools or []
+
+        if settings.openai_api_key is None:
+            raise MissingConfigurationError("OpenAI API key is required.")
+
         if client is not None:
             self.client = client
         else:
@@ -71,8 +77,7 @@ class OpenAiCLientImpl:
         tool_call_count = 0
         while True:
             requested_tool_calls = sum(
-                output_item.type == "function_call"
-                for output_item in response.output
+                output_item.type == "function_call" for output_item in response.output
             )
             if tool_call_count + requested_tool_calls > self.settings.max_tool_calls:
                 raise RuntimeError(

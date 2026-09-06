@@ -19,6 +19,8 @@ class ElevenLabsClient:
     ):
         if settings is None:
             raise MissingConfigurationError("Settings are required.")
+        if not settings.elevenlabs_api_key:
+            raise MissingConfigurationError("ElevenLabs API key is required.")
 
         self.settings = settings
         self.voice_id = voice_id

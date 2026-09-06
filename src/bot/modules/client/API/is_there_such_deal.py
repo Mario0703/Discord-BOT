@@ -55,6 +55,8 @@ class Deals:
 
         if settings is None:
             raise MissingConfigurationError("Settings are required.")
+        if not settings.itad_api_key:
+            raise MissingConfigurationError("IsThereAnyDeal API key is required.")
 
         self.api_key = settings.itad_api_key
 
