@@ -6,10 +6,12 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from openai import BadRequestError, NotFoundError
 
+from bot.errors import ToolCallLimitError
 from bot.modules.client.openAI.openai_client_impl import OpenAiCLientImpl
 from bot.storage.model_selections import ModelSelectionStore
 from bot.storage.token_usage import TokenUsage
 from bot.storage.user_conversations import UserConversations
+from tests.helpers import make_test_settings
 
 
 @pytest.mark.parametrize("tool_status", ["success", "unknown", "failure"])
@@ -43,6 +45,7 @@ def test_ask_openai_completes_tool_calls(tmp_path: Path, tool_status: str):
     service = OpenAiCLientImpl(
         tools=[tool],
         client=mock_client,
+        settings=make_test_settings(),
         user_conversations=conversations,
         token_usage=TokenUsage(tmp_path / "usage.json"),
         model_selection_store=ModelSelectionStore(tmp_path / "models.json"),
@@ -91,6 +94,7 @@ def test_ask_openai_creates_and_saves_user_conversation(tmp_path: Path):
 
     service = OpenAiCLientImpl(
         client=mock_client,
+        settings=make_test_settings(),
         user_conversations=conversations,
         token_usage=token_usage,
         model_selection_store=ModelSelectionStore(tmp_path / "models.json"),
@@ -133,6 +137,7 @@ def test_ask_openai_replaces_a_stale_conversation(tmp_path: Path):
 
     service = OpenAiCLientImpl(
         client=mock_client,
+        settings=make_test_settings(),
         user_conversations=conversations,
         token_usage=TokenUsage(tmp_path / "token_usage.json"),
         model_selection_store=ModelSelectionStore(tmp_path / "models.json"),
@@ -160,6 +165,7 @@ def test_ask_openai_recovers_from_unanswered_tool_call(tmp_path: Path):
     conversations.update_conversation(12345, "conv_interrupted")
     service = OpenAiCLientImpl(
         client=mock_client,
+        settings=make_test_settings(),
         user_conversations=conversations,
         token_usage=TokenUsage(tmp_path / "token_usage.json"),
         model_selection_store=ModelSelectionStore(tmp_path / "models.json"),
@@ -189,6 +195,7 @@ def test_ask_openai_does_not_reset_for_other_bad_requests(tmp_path: Path):
     conversations.update_conversation(12345, "conv_existing")
     service = OpenAiCLientImpl(
         client=mock_client,
+        settings=make_test_settings(),
         user_conversations=conversations,
         token_usage=TokenUsage(tmp_path / "token_usage.json"),
         model_selection_store=ModelSelectionStore(tmp_path / "models.json"),
@@ -219,6 +226,7 @@ def test_ask_openai_uses_a_saved_model_selection(tmp_path: Path):
 
     service = OpenAiCLientImpl(
         client=mock_client,
+        settings=make_test_settings(),
         user_conversations=UserConversations(tmp_path / "conversations.json"),
         token_usage=TokenUsage(tmp_path / "token_usage.json"),
         model_selection_store=selections,
@@ -238,6 +246,7 @@ def test_set_user_model_saves_only_supported_selections(tmp_path: Path):
     selections = ModelSelectionStore(tmp_path / "model_selections.json")
     service = OpenAiCLientImpl(
         client=Mock(),
+        settings=make_test_settings(),
         user_conversations=UserConversations(tmp_path / "conversations.json"),
         token_usage=TokenUsage(tmp_path / "token_usage.json"),
         model_selection_store=selections,
@@ -261,6 +270,7 @@ def test_model_selection_store_returns_the_saved_selection(tmp_path: Path):
     selections.set_selection(12345, "gpt-5.6-terra", "medium")
     service = OpenAiCLientImpl(
         client=Mock(),
+        settings=make_test_settings(),
         user_conversations=UserConversations(tmp_path / "conversations.json"),
         token_usage=TokenUsage(tmp_path / "token_usage.json"),
         model_selection_store=selections,
@@ -270,3 +280,40 @@ def test_model_selection_store_returns_the_saved_selection(tmp_path: Path):
     assert selection is not None
     assert selection.model_name == "gpt-5.6-terra"
     assert selection.reasoning_level == "medium"
+
+
+def test_openai_stops_when_tool_call_limit_is_exceeded(tmp_path: Path):
+    first_call = Mock(
+        type="function_call",
+        name="test_tool",
+        call_id="call_1",
+        arguments="{}",
+    )
+    second_call = Mock(
+        type="function_call",
+        name="test_tool",
+        call_id="call_2",
+        arguments="{}",
+    )
+    mock_client = Mock()
+    mock_client.responses.create = AsyncMock(
+        return_value=Mock(output=[first_call, second_call], usage=None)
+    )
+    conversations = UserConversations(tmp_path / "conversations.json")
+    conversations.update_conversation(12345, "conv_existing")
+    service = OpenAiCLientImpl(
+        tools=[],
+        client=mock_client,
+        settings=make_test_settings(max_tool_calls=1),
+        user_conversations=conversations,
+        token_usage=TokenUsage(tmp_path / "token_usage.json"),
+        model_selection_store=ModelSelectionStore(tmp_path / "models.json"),
+    )
+
+    with pytest.raises(ToolCallLimitError, match="maximum of 1 tool calls"):
+        asyncio.run(
+            service.generate_repsone_from_openAI(
+                "Use tools",
+                Mock(author=Mock(id=12345)),
+            )
+        )

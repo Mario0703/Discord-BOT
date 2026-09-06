@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
 import discord
 
@@ -7,10 +6,8 @@ from bot.command_categories.assistant import register as register_assistant
 from bot.command_categories.general import register as register_general
 from bot.command_categories.technical import register as register_technical
 from bot.command_categories.voice_assistant import register as register_voice
+from bot.Settings.settings import Settings
 from bot.tools.message_formatting import MessageFormatting
-
-GUILD_IDS = [770744107559682108]
-DATA_DIR = Path("data")
 
 
 def format_code_review(review: str) -> str:
@@ -36,6 +33,7 @@ def summary_date_range(start: str, end: str) -> tuple[datetime, datetime]:
 
 def register_pycord_command(
     bot: discord.Bot,
+    settings: Settings,
     openai_service,
     top_deals_service,
     code_review_service,
@@ -44,23 +42,22 @@ def register_pycord_command(
     elevenlabs_service,
 ):
 
-    register_assistant(bot, openai_service, top_deals_service, GUILD_IDS)
-    register_general(bot, summary_service, GUILD_IDS, summary_date_range)
+    register_assistant(bot, openai_service, top_deals_service, settings)
+    register_general(bot, summary_service, settings, summary_date_range)
     register_technical(
-        bot, openai_service, code_review_service, GUILD_IDS, format_code_review
+        bot, openai_service, code_review_service, settings, format_code_review
     )
     register_voice(
         bot,
         transcript_service,
         elevenlabs_service,
-        DATA_DIR,
-        GUILD_IDS,
+        settings,
     )
 
     @bot.slash_command(
         name="help",
         description="Show all available bot commands",
-        guild_ids=GUILD_IDS,
+        guild_ids=settings.guild_ids,
     )
     async def help_command(ctx: discord.ApplicationContext):
         embed = discord.Embed(

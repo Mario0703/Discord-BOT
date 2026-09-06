@@ -2,9 +2,9 @@ import json
 from unittest.mock import Mock, patch
 
 from bot.modules.client.API.is_there_such_deal import Deals
+from bot.Settings.settings import Settings
 
 
-@patch.dict("os.environ", {"ITAD_API_KEY": "test-api-key"})
 @patch("bot.modules.client.API.is_there_such_deal.requests.get")
 def test_api_request(mock_get):
     mock_response = Mock()
@@ -14,7 +14,17 @@ def test_api_request(mock_get):
     }
     mock_get.return_value = mock_response
 
-    result = Deals(country="DK", shop="61", discount_range=(80, 100)).get_steam_deals()
+    settings = Settings(
+        discord_token="test-token",
+        openai_api_key="test-openai-key",
+        itad_api_key="test-api-key",
+    )
+    result = Deals(
+        country="DK",
+        shop="61",
+        discount_range=(80, 100),
+        settings=settings,
+    ).get_steam_deals()
 
     assert result == {
         "title": "Example Game",

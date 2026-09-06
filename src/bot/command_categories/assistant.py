@@ -1,17 +1,24 @@
 import discord
 
+from bot.errors import OptionalFeatureUnavailableError, ToolCallLimitError
+from bot.Settings.settings import Settings
+
 from ..tools.message_formatting import MessageFormatting
 
 
-def register(bot, openai_service, top_deals_service, guild_ids):
+def register(bot, openai_service, top_deals_service, settings: Settings):
     assistant = bot.create_group(
-        "assistant", "AI assistant commands", guild_ids=guild_ids
+        "assistant", "AI assistant commands", guild_ids=settings.guild_ids
     )
 
     @assistant.command(name="ask", description="Ask Luna a question")
     async def ask_openai(ctx: discord.ApplicationContext, question: str):
         await ctx.defer()
-        answer = await openai_service.generate_repsone_from_openAI(question, ctx)
+        try:
+            answer = await openai_service.generate_repsone_from_openAI(question, ctx)
+        except ToolCallLimitError as error:
+            await MessageFormatting.send_followup(ctx, str(error))
+            return
         await MessageFormatting.send_followup(
             ctx, answer, allowed_mentions=discord.AllowedMentions.none()
         )
@@ -35,9 +42,13 @@ def register(bot, openai_service, top_deals_service, guild_ids):
     @assistant.command(name="deals", description="Get the top Steam deals")
     async def deals(ctx: discord.ApplicationContext):
         await ctx.defer()
-        text = await top_deals_service.get_top_steam_deals(ctx)
+        try:
+            text = await top_deals_service.get_top_steam_deals(ctx)
+        except (OptionalFeatureUnavailableError, ToolCallLimitError) as error:
+            await MessageFormatting.send_followup(ctx, str(error))
+            return
         await MessageFormatting.send_followup(
-            ctx, text, allowed_mentions=discord.AllowedMentions.none()
+            ctx, message=text, allowed_mentions=discord.AllowedMentions.none()
         )
 
     @assistant.command(name="model", description="List the models available for openAI")

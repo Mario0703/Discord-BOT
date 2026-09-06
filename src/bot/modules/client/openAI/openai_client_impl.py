@@ -3,23 +3,22 @@ import json
 import discord
 from openai import AsyncOpenAI, BadRequestError, NotFoundError
 
+from bot.errors import MissingConfigurationError, ToolCallLimitError
+from bot.openai_models import MODEL_REASONING_LEVELS
+from bot.Settings.settings import Settings
 from bot.tools.tool import tool as Tool
 
 from ....storage.model_selections import (
-    MODEL_REASONING_LEVELS,
     ModelSelection,
     ModelSelectionStore,
     resolve_model_settings,
 )
 from ....storage.token_usage import TokenUsage
 from ....storage.user_conversations import UserConversations
-from ..API.api_client import ApiClient
 from .prompts import assistant_prompt
 
 
-class OpenAiCLientImpl(ApiClient):
-    API_KEY_ENV_VAR = "API_KEY"
-
+class OpenAiCLientImpl:
     def __init__(
         self,
         tools: list[Tool] | None = None,
@@ -27,17 +26,28 @@ class OpenAiCLientImpl(ApiClient):
         user_conversations: UserConversations | None = None,
         token_usage: TokenUsage | None = None,
         model_selection_store: ModelSelectionStore | None = None,
+        settings: Settings | None = None,
     ):
+        if settings is None:
+            raise MissingConfigurationError("Settings are required.")
+        if not settings.openai_api_key:
+            raise MissingConfigurationError("OpenAI API key is required.")
+
+        self.settings = settings
         self.user_conversations = user_conversations or UserConversations()
         self.token_usage = token_usage or TokenUsage()
         self.model_selection_store = model_selection_store or ModelSelectionStore()
         self.input_token_count = 0
         self.output_token_count = 0
         self.tools = tools or []
+
+        if settings.openai_api_key is None:
+            raise MissingConfigurationError("OpenAI API key is required.")
+
         if client is not None:
             self.client = client
         else:
-            self.client = AsyncOpenAI(api_key=self.get_api_key())
+            self.client = AsyncOpenAI(api_key=settings.openai_api_key)
 
     async def generate_repsone_from_openAI(
         self, prompt: str, ctx: discord.ApplicationContext
@@ -46,7 +56,10 @@ class OpenAiCLientImpl(ApiClient):
         user_id = str(ctx.author.id)
         conversation_id = self.user_conversations.get_conversation(user_id)
         selection = self.model_selection_store.selections.get(str(user_id))
-        model_id, reasoning_level = resolve_model_settings(selection)
+        model_id, reasoning_level = resolve_model_settings(
+            selection,
+            self.settings,
+        )
 
         if conversation_id is None:
             conversation_id = await self._create_conversation(user_id)
@@ -61,10 +74,22 @@ class OpenAiCLientImpl(ApiClient):
             user_id, prompt, conversation_id, model_id, tool_definitions, reasoning
         )
         self._record_usage(user_id, response)  # Record initial response usage
+        tool_call_count = 0
         while True:
+            requested_tool_calls = sum(
+                output_item.type == "function_call" for output_item in response.output
+            )
+            if tool_call_count + requested_tool_calls > self.settings.max_tool_calls:
+                raise ToolCallLimitError(
+                    "This request exceeded the maximum of "
+                    f"{self.settings.max_tool_calls} tool calls. "
+                    "Please try a simpler request."
+                )
+
             tool_outputs = await self._execute_tool_calls(response)
             if not tool_outputs:
                 return response.output_text
+            tool_call_count += len(tool_outputs)
 
             response = await self.client.responses.create(
                 model=model_id,
@@ -168,7 +193,7 @@ class OpenAiCLientImpl(ApiClient):
             model_id.append(model.id)
         return model_id
 
-    async def get_model_info(self) -> dict[str, list[str]]:
+    async def get_model_info(self) -> dict[str, tuple[str, ...]]:
         available_model_ids = set(await self.get_model_list())
         models_dict = {}
 

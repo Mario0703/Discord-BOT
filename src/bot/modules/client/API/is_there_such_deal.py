@@ -3,12 +3,12 @@ from collections.abc import Sequence
 
 import requests
 
-from .api_client import ApiClient
+from bot.errors import MissingConfigurationError, OptionalFeatureUnavailableError
+from bot.Settings.settings import Settings
 
 
-class Deals(ApiClient):
+class Deals:
     BASE_URL = "https://api.isthereanydeal.com"
-    API_KEY_ENV_VAR = "ITAD_API_KEY"
 
     AREA_CODES = {
         "AT": "Austria",
@@ -45,7 +45,22 @@ class Deals(ApiClient):
         61: "Steam",
     }
 
-    def __init__(self, country: str, shop: str | int, discount_range: Sequence[int]):
+    def __init__(
+        self,
+        country: str,
+        shop: str | int,
+        discount_range: Sequence[int],
+        settings: Settings | None = None,
+    ):
+
+        if settings is None:
+            raise MissingConfigurationError("Settings are required.")
+        if not settings.itad_api_key:
+            raise OptionalFeatureUnavailableError(
+                "Deals are unavailable because ITAD_API_KEY is not configured."
+            )
+
+        self.api_key = settings.itad_api_key
 
         if not isinstance(country, str) or not country.strip():
             raise ValueError("country must be a non-empty string")
@@ -80,7 +95,7 @@ class Deals(ApiClient):
     def get_steam_deals(self):
         response = requests.get(
             f"{self.BASE_URL}/deals/v2",
-            headers={"ITAD-API-Key": self.get_api_key()},
+            headers={"ITAD-API-Key": self.api_key or ""},
             params={
                 "country": self.country,
                 "shops": self.shop,

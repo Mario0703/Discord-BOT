@@ -1,5 +1,8 @@
 import discord
 
+from bot.errors import ToolCallLimitError
+from bot.Settings import settings
+
 from ..tools.message_formatting import MessageFormatting
 
 
@@ -8,18 +11,26 @@ def _is_administrator(ctx: discord.ApplicationContext) -> bool:
 
 
 def register(
-    bot, openai_service, code_review_service, guild_ids, format_code_review
+    bot,
+    openai_service,
+    code_review_service,
+    settings: settings.Settings,
+    format_code_review,
 ) -> None:
     technical = bot.create_group(
-        "technical", "Tech related commands", guild_ids=guild_ids
+        "technical", "Tech related commands", guild_ids=settings.guild_ids
     )
 
     @technical.command(name="code_review", description="Review source code")
     async def code_review(ctx: discord.ApplicationContext, language: str, code: str):
         await ctx.defer()
-        review = format_code_review(
-            await code_review_service.do_code_review_with_promt(language, code, ctx)
-        )
+        try:
+            review = format_code_review(
+                await code_review_service.do_code_review_with_promt(language, code, ctx)
+            )
+        except ToolCallLimitError as error:
+            await MessageFormatting.send_followup(ctx, str(error))
+            return
         await MessageFormatting.send_followup(
             ctx,
             review,
