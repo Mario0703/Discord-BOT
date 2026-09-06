@@ -27,6 +27,14 @@ def register(
         description="Get token usage for each user in the last 24 hours",
     )
     async def token_report(ctx: discord.ApplicationContext):
+
+        if ctx.guild is None or ctx.author.id != ctx.guild.owner_id:
+            await MessageFormatting.send_response(
+                ctx,
+                "Only the server owner can use this command.",
+            )
+            return
+
         report = openai_service.token_usage.report()
         if not report:
             await MessageFormatting.send_response(
