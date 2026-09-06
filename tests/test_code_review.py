@@ -8,6 +8,7 @@ from bot.modules.client.openAI.prompts import code_review_prompt
 from bot.storage.model_selections import ModelSelectionStore
 from bot.storage.token_usage import TokenUsage
 from bot.storage.user_conversations import UserConversations
+from tests.helpers import make_test_settings
 
 
 def test_code_review_uses_the_saved_user_profile(tmp_path: Path):
@@ -25,6 +26,7 @@ def test_code_review_uses_the_saved_user_profile(tmp_path: Path):
     conversations.update_conversation(12345, "conv_existing")
     openai_service = OpenAiCLientImpl(
         client=mock_client,
+        settings=make_test_settings(),
         model_selection_store=selections,
         user_conversations=conversations,
         token_usage=TokenUsage(tmp_path / "usage.json"),

@@ -28,6 +28,10 @@ class OpenAiCLientImpl:
         model_selection_store: ModelSelectionStore | None = None,
         settings: Settings | None = None,
     ):
+        if settings is None:
+            raise MissingConfigurationError("Settings are required.")
+
+        self.settings = settings
         self.user_conversations = user_conversations or UserConversations()
         self.token_usage = token_usage or TokenUsage()
         self.model_selection_store = model_selection_store or ModelSelectionStore()
@@ -36,12 +40,8 @@ class OpenAiCLientImpl:
         self.tools = tools or []
         if client is not None:
             self.client = client
-        elif settings is not None:
-            self.client = AsyncOpenAI(api_key=settings.openai_api_key)
         else:
-            raise MissingConfigurationError(
-                "OpenAI settings are required when no client is provided."
-            )
+            self.client = AsyncOpenAI(api_key=settings.openai_api_key)
 
     async def generate_repsone_from_openAI(
         self, prompt: str, ctx: discord.ApplicationContext
@@ -50,7 +50,10 @@ class OpenAiCLientImpl:
         user_id = str(ctx.author.id)
         conversation_id = self.user_conversations.get_conversation(user_id)
         selection = self.model_selection_store.selections.get(str(user_id))
-        model_id, reasoning_level = resolve_model_settings(selection)
+        model_id, reasoning_level = resolve_model_settings(
+            selection,
+            self.settings,
+        )
 
         if conversation_id is None:
             conversation_id = await self._create_conversation(user_id)
