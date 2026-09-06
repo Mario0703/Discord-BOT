@@ -3,6 +3,7 @@ import asyncio
 import discord
 
 from ..tools.message_formatting import MessageFormatting
+from datetime import datetime, timedelta
 
 
 def register(bot, summary_service, guild_ids, summary_date_range):
@@ -16,9 +17,26 @@ def register(bot, summary_service, guild_ids, summary_date_range):
     async def summarize(
         ctx: discord.ApplicationContext, start: str, end: str, channel_name: str
     ):
-        if ctx.guild is None:
+
+        current_time = discord.utils.utcnow()
+        start_date = datetime.fromisoformat(start)
+        end_date = datetime.fromisoformat(end)
+
+        if start_date > current_time or end_date > current_time:
             await MessageFormatting.send_response(
-                ctx, "This command can only be used in a server."
+                ctx, "You cannot summarize messages from the future."
+            )
+            return
+
+        if start_date > end_date:
+            await MessageFormatting.send_response(
+                ctx, "The start date must be before the end date."
+            )
+            return
+
+        if end_date - start_date > timedelta(days=7):
+            await MessageFormatting.send_response(
+                ctx, "The date range cannot exceed 7 days."
             )
             return
 
