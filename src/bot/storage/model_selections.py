@@ -4,14 +4,9 @@ import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from bot.openai_models import MODEL_REASONING_LEVELS
 from bot.Settings.settings import Settings
 
-MODEL_REASONING_LEVELS = {
-    "gpt-5.6-luna": ["none", "low", "medium", "high", "xhigh", "max"],
-    "gpt-5.6-terra": ["none", "low", "medium", "high", "xhigh", "max"],
-    "gpt-5.6-sol": ["none", "low", "medium", "high", "xhigh", "max"],
-    "gpt-5": ["minimal", "low", "medium", "high"],
-}
 
 @dataclass
 class ModelSelection:

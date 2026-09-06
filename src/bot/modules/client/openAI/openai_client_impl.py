@@ -4,11 +4,11 @@ import discord
 from openai import AsyncOpenAI, BadRequestError, NotFoundError
 
 from bot.errors import MissingConfigurationError
+from bot.openai_models import MODEL_REASONING_LEVELS
 from bot.Settings.settings import Settings
 from bot.tools.tool import tool as Tool
 
 from ....storage.model_selections import (
-    MODEL_REASONING_LEVELS,
     ModelSelection,
     ModelSelectionStore,
     resolve_model_settings,
@@ -192,7 +192,7 @@ class OpenAiCLientImpl:
             model_id.append(model.id)
         return model_id
 
-    async def get_model_info(self) -> dict[str, list[str]]:
+    async def get_model_info(self) -> dict[str, tuple[str, ...]]:
         available_model_ids = set(await self.get_model_list())
         models_dict = {}
 

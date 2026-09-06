@@ -5,6 +5,9 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from bot.errors import ConfigurationError
+from bot.openai_models import MODEL_REASONING_LEVELS
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -24,6 +27,31 @@ class Settings:
     upload_max_bytes: int = 10 * 1024 * 1024
     tts_max_characters: int = 5_000
     max_tool_calls: int = 5
+
+    def __post_init__(self) -> None:
+        numeric_limits = {
+            "summary_max_days": self.summary_max_days,
+            "summary_max_messages": self.summary_max_messages,
+            "summary_max_characters": self.summary_max_characters,
+            "upload_max_bytes": self.upload_max_bytes,
+            "tts_max_characters": self.tts_max_characters,
+            "max_tool_calls": self.max_tool_calls,
+        }
+        for name, value in numeric_limits.items():
+            if value <= 0:
+                raise ConfigurationError(f"{name} must be greater than zero.")
+
+        if self.openai_model not in MODEL_REASONING_LEVELS:
+            raise ConfigurationError(
+                f"Unsupported OpenAI model: {self.openai_model}."
+            )
+
+        supported_levels = MODEL_REASONING_LEVELS[self.openai_model]
+        if self.openai_reasoning_level not in supported_levels:
+            raise ConfigurationError(
+                f"Reasoning level {self.openai_reasoning_level!r} is not "
+                f"supported by {self.openai_model!r}."
+            )
 
 
 def _required(name: str) -> str:

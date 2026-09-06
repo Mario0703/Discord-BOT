@@ -1,5 +1,6 @@
 import pytest
 
+from bot.errors import ConfigurationError
 from bot.Settings.settings import Settings, _check_api_keys_settings
 
 
@@ -25,3 +26,42 @@ def test_configured_optional_api_keys_do_not_warn():
     )
 
     assert _check_api_keys_settings(settings) is True
+
+
+@pytest.mark.parametrize(
+    "field_name",
+    [
+        "summary_max_days",
+        "summary_max_messages",
+        "summary_max_characters",
+        "upload_max_bytes",
+        "tts_max_characters",
+        "max_tool_calls",
+    ],
+)
+def test_numeric_limits_must_be_positive(field_name):
+    with pytest.raises(ConfigurationError, match="must be greater than zero"):
+        Settings(
+            discord_token="test-token",
+            openai_api_key="test-openai-key",
+            **{field_name: 0},
+        )
+
+
+def test_default_openai_model_must_be_supported():
+    with pytest.raises(ConfigurationError, match="Unsupported OpenAI model"):
+        Settings(
+            discord_token="test-token",
+            openai_api_key="test-openai-key",
+            openai_model="unsupported-model",
+        )
+
+
+def test_default_reasoning_level_must_be_supported_by_model():
+    with pytest.raises(ConfigurationError, match="Reasoning level"):
+        Settings(
+            discord_token="test-token",
+            openai_api_key="test-openai-key",
+            openai_model="gpt-5",
+            openai_reasoning_level="xhigh",
+        )

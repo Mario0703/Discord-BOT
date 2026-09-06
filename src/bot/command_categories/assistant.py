@@ -44,7 +44,7 @@ def register(bot, openai_service, top_deals_service, settings: Settings):
             await MessageFormatting.send_followup(ctx, str(error))
             return
         await MessageFormatting.send_followup(
-            ctx, text, allowed_mentions=discord.AllowedMentions.none()
+            ctx, message=text, allowed_mentions=discord.AllowedMentions.none()
         )
 
     @assistant.command(name="model", description="List the models available for openAI")
