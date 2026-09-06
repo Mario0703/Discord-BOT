@@ -3,18 +3,28 @@ from urllib.parse import quote
 
 import requests
 
-from .api_client import ApiClient
+from bot.errors import MissingConfigurationError
+from bot.Settings.settings import Settings
 
 
-class OpenWeather(ApiClient):
-    API_KEY_ENV_VAR = "OPENWEATHER_API_KEY"
+class OpenWeather:
     DIRECT_GEOCODING_ENDPOINT = "https://api.openweathermap.org/geo/1.0/direct"
     CURRENT_WEATHER_ENDPOINT = "https://api.openweathermap.org/data/2.5/weather"
 
-    def __init__(self, city_name: str, state_code: str, country_code: str):
+    def __init__(
+        self,
+        city_name: str,
+        state_code: str,
+        country_code: str,
+        settings: Settings | None = None,
+    ):
+        if settings is None:
+            raise MissingConfigurationError("Settings are required.")
+
         self.city_name = city_name
         self.state_code = state_code
         self.country_code = country_code
+        self.api_key = settings.openweather_api_key
 
     def get_geocoding(self, limit: int = 1) -> list[dict[str, Any]]:
         if not 1 <= limit <= 5:
@@ -30,7 +40,7 @@ class OpenWeather(ApiClient):
             f"{self.DIRECT_GEOCODING_ENDPOINT}"
             f"?q={quote(location, safe=',')}"
             f"&limit={limit}"
-            f"&appid={quote(self.get_api_key(), safe='')}"
+            f"&appid={quote(self.api_key or '', safe='')}"
         )
         response = requests.get(base_url, timeout=15)
         response.raise_for_status()
@@ -53,7 +63,7 @@ class OpenWeather(ApiClient):
             f"?lat={latitude}"
             f"&lon={longitude}"
             f"&units=metric"
-            f"&appid={quote(self.get_api_key(), safe='')}"
+            f"&appid={quote(self.api_key or '', safe='')}"
         )
         response = requests.get(weather_url, timeout=15)
         response.raise_for_status()

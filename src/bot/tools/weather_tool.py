@@ -1,11 +1,14 @@
 from typing import Any
 
+from bot.Settings.settings import Settings
+
 from ..modules.client.API.weather import OpenWeather
 from .tool import tool
 
 
 class WeatherTool(tool):
-    def __init__(self):
+    def __init__(self, settings: Settings):
+        self.settings = settings
         self.name = "get_current_weather"
         self.description = (
             "Get current weather for a city using its city, optional state, "
@@ -47,5 +50,6 @@ class WeatherTool(tool):
             city_name=kwargs["city_name"],
             state_code=kwargs["state_code"],
             country_code=kwargs["country_code"],
+            settings=self.settings,
         )
         return weather.get_weather()

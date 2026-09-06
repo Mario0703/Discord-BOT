@@ -4,25 +4,27 @@ from pathlib import Path
 from elevenlabs.client import ElevenLabs
 from elevenlabs.play import play
 
-from ..API.api_client import ApiClient
+from bot.errors.errors import MissingConfigurationError
+from bot.Settings.settings import Settings
 
 
-class ElevenLabsClient(ApiClient):
+class ElevenLabsClient:
     """Convert text to speech using ElevenLabs."""
-
-    API_KEY_ENV_VAR = "ELEVENLABS_API_KEY"
-    SPEECH_DIR = Path(
-        r"F:\Python Projects\Discord Bot\Discord-BOT\src\bot\eleven_labs_speech"
-    )
 
     def __init__(
         self,
         voice_id: str = "JBFqnCBsd6RMkjVDRZzb",
         model_id: str = "eleven_multilingual_v2",
+        settings: Settings | None = None,
     ):
+        if settings is None:
+            raise MissingConfigurationError("Settings are required.")
+
+        self.settings = settings
         self.voice_id = voice_id
         self.model_id = model_id
-        self.client = ElevenLabs(api_key=self.get_api_key())
+        self.speech_dir = settings.data_dir / "speech"
+        self.client = ElevenLabs(api_key=settings.elevenlabs_api_key)
 
     def convert_text_to_speech(self, text: str) -> Iterable[bytes]:
         """Return generated audio chunks for the supplied text."""
@@ -44,7 +46,7 @@ class ElevenLabsClient(ApiClient):
         """Save generated audio chunks to an MP3 file."""
         path = Path(output_path)
         if not path.is_absolute():
-            path = self.SPEECH_DIR / path
+            path = self.speech_dir / path
         path.parent.mkdir(parents=True, exist_ok=True)
 
         with path.open("wb") as output_file:

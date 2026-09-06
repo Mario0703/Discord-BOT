@@ -30,8 +30,8 @@ def create_discord_bot(settings: Settings) -> discord.Bot:
         settings.data_dir / "model_selections.json"
     )
 
-    game_deals_tool = GamesDealTool()
-    weather_tool = WeatherTool()
+    game_deals_tool = GamesDealTool(settings)
+    weather_tool = WeatherTool(settings)
     openai_service = OpenAiCLientImpl(
         tools=[game_deals_tool, weather_tool],
         settings=settings,
@@ -43,7 +43,7 @@ def create_discord_bot(settings: Settings) -> discord.Bot:
     code_review_service = CodeReview(openai_service)
     summary_service = SummaryOpenAI(openai_service)
     transcript_service = Transcript(openai_service)
-    elevenlabs_service = ElevenLabsClient()
+    elevenlabs_service = ElevenLabsClient(settings=settings)
 
     register_pycord_command(
         bot,

@@ -1,11 +1,14 @@
 from typing import Any
 
+from bot.Settings.settings import Settings
+
 from ..modules.client.API.is_there_such_deal import Deals
 from .tool import tool
 
 
 class GamesDealTool(tool):
-    def __init__(self):
+    def __init__(self, settings: Settings):
+        self.settings = settings
         self.name = "get_game_deals"
         self.description = "Find game deals from IsThereAnyDeal."
         self.parameters = {
@@ -45,5 +48,6 @@ class GamesDealTool(tool):
             country=kwargs["country"],
             shop=kwargs["shop"],
             discount_range=(kwargs["discount_min"], kwargs["discount_max"]),
+            settings=self.settings,
         )
         return deals.get_steam_deals()
