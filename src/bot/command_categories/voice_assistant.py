@@ -7,6 +7,8 @@ import discord
 
 from ..tools.message_formatting import MessageFormatting
 
+MAX_TTS_TEXT_LENGTH = 5_000
+
 MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
 
 
@@ -179,6 +181,12 @@ def register(bot, transcript_service, elevenlabs_service, data_dir, guild_ids):
         if ctx.author.voice is None or ctx.author.voice.channel is None:
             await MessageFormatting.send_response(
                 ctx, "You must be in a voice channel first."
+            )
+            return
+        if len(text) > MAX_TTS_TEXT_LENGTH:
+            await MessageFormatting.send_response(
+                ctx,
+                f"The text cannot exceed {MAX_TTS_TEXT_LENGTH:,} characters.",
             )
             return
         await MessageFormatting.send_response(
