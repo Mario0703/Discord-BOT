@@ -48,6 +48,7 @@ class MessageFormatting:
         **kwargs: Any,
     ) -> None:
         """Send a long response as one or more Discord follow-up messages."""
+        kwargs.setdefault("allowed_mentions", discord.AllowedMentions.none())
         for part in cls.split_message(message):
             await ctx.followup.send(part, **kwargs)
 
@@ -59,6 +60,7 @@ class MessageFormatting:
         **kwargs: Any,
     ) -> None:
         """Send the first part as a response and remaining parts as follow-ups."""
+        kwargs.setdefault("allowed_mentions", discord.AllowedMentions.none())
         parts = cls.split_message(message)
         if not parts:
             return
@@ -73,7 +75,10 @@ class MessageFormatting:
         embed: discord.Embed,
     ) -> None:
         """Send an embed as the initial interaction response."""
-        await ctx.respond(embed=embed)
+        await ctx.respond(
+            embed=embed,
+            allowed_mentions=discord.AllowedMentions.none(),
+        )
 
     @staticmethod
     async def send_followup_embed(
@@ -81,7 +86,10 @@ class MessageFormatting:
         embed: discord.Embed,
     ) -> None:
         """Send an embed after an interaction has been deferred."""
-        await ctx.followup.send(embed=embed)
+        await ctx.followup.send(
+            embed=embed,
+            allowed_mentions=discord.AllowedMentions.none(),
+        )
 
     @classmethod
     async def send_direct_message(
@@ -91,10 +99,11 @@ class MessageFormatting:
         **kwargs: Any,
     ) -> None:
         """Send a Discord-safe message directly to a user or channel."""
+        kwargs.setdefault("allowed_mentions", discord.AllowedMentions.none())
         parts = cls.split_message(message)
         if not parts:
             return
 
         await recipient.send(parts[0], **kwargs)
         for part in parts[1:]:
-            await recipient.send(part)
+            await recipient.send(part, **kwargs)

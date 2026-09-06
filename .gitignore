@@ -222,6 +222,7 @@ __marimo__/
 .streamlit/secrets.toml
 
 # Local usage and conversation data
+data/
 token_usage.json
 user_conversations.json
 model_selections.json

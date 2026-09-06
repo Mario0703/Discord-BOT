@@ -3,6 +3,10 @@ import discord
 from ..tools.message_formatting import MessageFormatting
 
 
+def _is_administrator(ctx: discord.ApplicationContext) -> bool:
+    return ctx.guild is not None and ctx.author.guild_permissions.administrator
+
+
 def register(
     bot, openai_service, code_review_service, guild_ids, format_code_review
 ) -> None:
@@ -27,10 +31,21 @@ def register(
         description="Get token usage for each user in the last 24 hours",
     )
     async def token_report(ctx: discord.ApplicationContext):
+
+        if not _is_administrator(ctx):
+            await MessageFormatting.send_response(
+                ctx,
+                "Only administrators can use this command.",
+                allowed_mentions=discord.AllowedMentions.none(),
+            )
+            return
+
         report = openai_service.token_usage.report()
         if not report:
             await MessageFormatting.send_response(
-                ctx, "No token usage has been recorded in the last 24 hours."
+                ctx,
+                "No token usage has been recorded in the last 24 hours.",
+                allowed_mentions=discord.AllowedMentions.none(),
             )
             return
         lines = ["Token usage in the last 24 hours:"]
@@ -40,4 +55,8 @@ def register(
                 f"<@{user_id}> — input: {usage['input']}, "
                 f"output: {usage['output']}, total: {total}"
             )
-        await MessageFormatting.send_response(ctx, "\n".join(lines))
+        await MessageFormatting.send_response(
+            ctx,
+            "\n".join(lines),
+            allowed_mentions=discord.AllowedMentions.none(),
+        )
