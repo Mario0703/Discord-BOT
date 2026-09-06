@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "A Discord bot built with Pycord and the OpenAI SDK."
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = ["elevenlabs", "openai", "py-cord", "python-dotenv"]
+dependencies = ["elevenlabs", "openai", "py-cord", "python-dotenv" ,"httpx"]
 
 [project.optional-dependencies]
 dev = ["pytest", "pytest-asyncio", "ruff", "black", "mypy"]
