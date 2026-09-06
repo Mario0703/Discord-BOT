@@ -1,6 +1,6 @@
 # Discord-BOT
 
-A Discord bot built with Pycord, the OpenAI SDK, and ElevenLabs.
+This project is a Discord bot built with Pycord that integrates the OpenAI and ElevenLabs SDKs. Its goal is to explore how large language models and AI-generated audio can be integrated into a Discord application, including features such as conversational responses, code reviews, and voice-related functionality
 
 ## Setup
 
@@ -13,15 +13,14 @@ py -m venv .venv
 
 Install runtime and development dependencies:
 
-```powershell
-python -m pip install -r requirements-dev.txt
-```
+`pip install -e ".[dev]"`
 
-Create a `.env` file with the credentials required by the bot, then start it with:
+The `.env.example` file lists the environment variables required to run the bot, including the Discord bot token and API keys for OpenAI, ElevenLabs, and other services. Users should copy this file to .env and fill in their own credentials.
 
-```powershell
-python -m bot
-```
+Finally to run the bot, use
+
+`python -m bot`
+
 
 ## Code quality
 
