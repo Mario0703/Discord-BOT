@@ -26,9 +26,7 @@ def create_discord_bot(settings: Settings) -> discord.Bot:
         settings.data_dir / "user_conversations.json"
     )
     token_usage = TokenUsage(settings.data_dir / "token_usage.json")
-    model_selections = ModelSelectionStore(
-        settings.data_dir / "model_selections.json"
-    )
+    model_selections = ModelSelectionStore(settings.data_dir / "model_selections.json")
 
     game_deals_tool = GamesDealTool(settings)
     weather_tool = WeatherTool(settings)

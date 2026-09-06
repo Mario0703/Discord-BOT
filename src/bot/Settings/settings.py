@@ -42,9 +42,7 @@ class Settings:
                 raise ConfigurationError(f"{name} must be greater than zero.")
 
         if self.openai_model not in MODEL_REASONING_LEVELS:
-            raise ConfigurationError(
-                f"Unsupported OpenAI model: {self.openai_model}."
-            )
+            raise ConfigurationError(f"Unsupported OpenAI model: {self.openai_model}.")
 
         supported_levels = MODEL_REASONING_LEVELS[self.openai_model]
         if self.openai_reasoning_level not in supported_levels:
@@ -78,6 +76,16 @@ def _guild_ids() -> tuple[int, ...]:
     return guild_ids
 
 
+def _integer_setting(name: str, default: int) -> int:
+    raw_value = os.getenv(name)
+    if raw_value is None or not raw_value.strip():
+        return default
+    try:
+        return int(raw_value)
+    except ValueError as error:
+        raise ConfigurationError(f"{name} must be an integer.") from error
+
+
 def _check_api_keys_settings(settings: Settings) -> bool:
     """Warn about missing optional provider keys without stopping startup."""
     optional_keys = {
@@ -106,7 +114,28 @@ def load_settings() -> Settings:
         discord_token=_required("TOKEN"),
         guild_ids=_guild_ids(),
         openai_api_key=_required("OPENAI_API_KEY"),
+        openai_model=os.getenv("OPENAI_MODEL") or Settings.openai_model,
+        openai_reasoning_level=(
+            os.getenv("OPENAI_REASONING_LEVEL") or Settings.openai_reasoning_level
+        ),
         elevenlabs_api_key=os.getenv("ELEVENLABS_API_KEY") or None,
         itad_api_key=os.getenv("ITAD_API_KEY") or None,
         openweather_api_key=os.getenv("OPENWEATHER_API_KEY") or None,
+        data_dir=Path(os.getenv("DATA_DIR") or Settings.data_dir),
+        summary_max_days=_integer_setting(
+            "SUMMARY_MAX_DAYS", Settings.summary_max_days
+        ),
+        summary_max_messages=_integer_setting(
+            "SUMMARY_MAX_MESSAGES", Settings.summary_max_messages
+        ),
+        summary_max_characters=_integer_setting(
+            "SUMMARY_MAX_CHARACTERS", Settings.summary_max_characters
+        ),
+        upload_max_bytes=_integer_setting(
+            "UPLOAD_MAX_BYTES", Settings.upload_max_bytes
+        ),
+        tts_max_characters=_integer_setting(
+            "TTS_MAX_CHARACTERS", Settings.tts_max_characters
+        ),
+        max_tool_calls=_integer_setting("MAX_TOOL_CALLS", Settings.max_tool_calls),
     )

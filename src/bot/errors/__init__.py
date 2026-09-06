@@ -5,6 +5,7 @@ from .errors import (
     Errors,
     MissingConfigurationError,
     OptionalFeatureUnavailableError,
+    ToolCallLimitError,
 )
 
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     "Errors",
     "MissingConfigurationError",
     "OptionalFeatureUnavailableError",
+    "ToolCallLimitError",
 ]

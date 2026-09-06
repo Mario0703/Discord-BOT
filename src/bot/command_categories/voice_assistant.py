@@ -10,6 +10,22 @@ from bot.Settings.settings import Settings
 from ..tools.message_formatting import MessageFormatting
 
 
+def _upload_size_error(size_bytes: int, settings: Settings) -> str | None:
+    if size_bytes <= settings.upload_max_bytes:
+        return None
+    size_limit_mb = settings.upload_max_bytes / (1024 * 1024)
+    return (
+        "The uploaded file exceeds the configured size limit of "
+        f"{size_limit_mb:g} MB."
+    )
+
+
+def _tts_text_error(text: str, settings: Settings) -> str | None:
+    if len(text) <= settings.tts_max_characters:
+        return None
+    return f"The text cannot exceed {settings.tts_max_characters:,} characters."
+
+
 def register(bot, transcript_service, elevenlabs_service, settings: Settings):
     voice = bot.create_group(
         "voice_assistant",
@@ -108,13 +124,9 @@ def register(bot, transcript_service, elevenlabs_service, settings: Settings):
         audio_path = recordings_dir / f"upload_{uuid4().hex}.mp3"
         transcript_path = transcripts_dir / f"transcript_{uuid4().hex}.txt"
 
-        size_bytes = file.size
-        if size_bytes > settings.upload_max_bytes:
-            await MessageFormatting.send_response(
-                ctx,
-                "The uploaded file exceeds the configured size limit of "
-                f"{settings.upload_max_bytes / (1024 * 1024):g} MB.",
-            )
+        size_error = _upload_size_error(file.size, settings)
+        if size_error:
+            await MessageFormatting.send_response(ctx, size_error)
             return
 
         await MessageFormatting.send_response(
@@ -209,11 +221,9 @@ def register(bot, transcript_service, elevenlabs_service, settings: Settings):
                 ctx, "You must be in a voice channel first."
             )
             return
-        if len(text) > settings.tts_max_characters:
-            await MessageFormatting.send_response(
-                ctx,
-                f"The text cannot exceed {settings.tts_max_characters:,} characters.",
-            )
+        text_error = _tts_text_error(text, settings)
+        if text_error:
+            await MessageFormatting.send_response(ctx, text_error)
             return
         await MessageFormatting.send_response(
             ctx, "Creating speech and preparing the voice channel..."

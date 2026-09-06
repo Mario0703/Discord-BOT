@@ -3,7 +3,7 @@ import json
 import discord
 from openai import AsyncOpenAI, BadRequestError, NotFoundError
 
-from bot.errors import MissingConfigurationError
+from bot.errors import MissingConfigurationError, ToolCallLimitError
 from bot.openai_models import MODEL_REASONING_LEVELS
 from bot.Settings.settings import Settings
 from bot.tools.tool import tool as Tool
@@ -80,9 +80,10 @@ class OpenAiCLientImpl:
                 output_item.type == "function_call" for output_item in response.output
             )
             if tool_call_count + requested_tool_calls > self.settings.max_tool_calls:
-                raise RuntimeError(
-                    "OpenAI exceeded the configured tool-call limit of "
-                    f"{self.settings.max_tool_calls}."
+                raise ToolCallLimitError(
+                    "This request exceeded the maximum of "
+                    f"{self.settings.max_tool_calls} tool calls. "
+                    "Please try a simpler request."
                 )
 
             tool_outputs = await self._execute_tool_calls(response)

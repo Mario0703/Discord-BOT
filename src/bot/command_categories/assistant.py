@@ -1,6 +1,6 @@
 import discord
 
-from bot.errors import OptionalFeatureUnavailableError
+from bot.errors import OptionalFeatureUnavailableError, ToolCallLimitError
 from bot.Settings.settings import Settings
 
 from ..tools.message_formatting import MessageFormatting
@@ -14,7 +14,11 @@ def register(bot, openai_service, top_deals_service, settings: Settings):
     @assistant.command(name="ask", description="Ask Luna a question")
     async def ask_openai(ctx: discord.ApplicationContext, question: str):
         await ctx.defer()
-        answer = await openai_service.generate_repsone_from_openAI(question, ctx)
+        try:
+            answer = await openai_service.generate_repsone_from_openAI(question, ctx)
+        except ToolCallLimitError as error:
+            await MessageFormatting.send_followup(ctx, str(error))
+            return
         await MessageFormatting.send_followup(
             ctx, answer, allowed_mentions=discord.AllowedMentions.none()
         )
@@ -40,7 +44,7 @@ def register(bot, openai_service, top_deals_service, settings: Settings):
         await ctx.defer()
         try:
             text = await top_deals_service.get_top_steam_deals(ctx)
-        except OptionalFeatureUnavailableError as error:
+        except (OptionalFeatureUnavailableError, ToolCallLimitError) as error:
             await MessageFormatting.send_followup(ctx, str(error))
             return
         await MessageFormatting.send_followup(

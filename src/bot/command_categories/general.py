@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 
 import discord
 
+from bot.errors import ToolCallLimitError
 from bot.Settings.settings import Settings
 
 from ..tools.message_formatting import MessageFormatting
@@ -126,9 +127,13 @@ def register(bot, summary_service, settings: Settings, summary_date_range):
                 ctx, error, allowed_mentions=discord.AllowedMentions.none()
             )
             return
-        summary = await summary_service.summerice_channel_history_start_to_end(
-            channel.name, start, end, messages, ctx
-        )
+        try:
+            summary = await summary_service.summerice_channel_history_start_to_end(
+                channel.name, start, end, messages, ctx
+            )
+        except ToolCallLimitError as error:
+            await MessageFormatting.send_followup(ctx, str(error))
+            return
         await MessageFormatting.send_followup(
             ctx,
             summary,

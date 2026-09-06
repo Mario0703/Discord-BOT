@@ -1,7 +1,13 @@
+from pathlib import Path
+
 import pytest
 
 from bot.errors import ConfigurationError
-from bot.Settings.settings import Settings, _check_api_keys_settings
+from bot.Settings.settings import (
+    Settings,
+    _check_api_keys_settings,
+    load_settings,
+)
 
 
 def test_missing_optional_api_keys_warn_without_stopping_startup():
@@ -65,3 +71,35 @@ def test_default_reasoning_level_must_be_supported_by_model():
             openai_model="gpt-5",
             openai_reasoning_level="xhigh",
         )
+
+
+def test_load_settings_reads_optional_configuration_overrides(monkeypatch):
+    environment = {
+        "TOKEN": "discord-token",
+        "GUILD_IDS": "123,456",
+        "OPENAI_API_KEY": "openai-key",
+        "OPENAI_MODEL": "gpt-5",
+        "OPENAI_REASONING_LEVEL": "high",
+        "DATA_DIR": "custom-data",
+        "SUMMARY_MAX_DAYS": "3",
+        "SUMMARY_MAX_MESSAGES": "200",
+        "SUMMARY_MAX_CHARACTERS": "3000",
+        "UPLOAD_MAX_BYTES": "4000",
+        "TTS_MAX_CHARACTERS": "500",
+        "MAX_TOOL_CALLS": "2",
+    }
+    for name, value in environment.items():
+        monkeypatch.setenv(name, value)
+
+    settings = load_settings()
+
+    assert settings.guild_ids == (123, 456)
+    assert settings.openai_model == "gpt-5"
+    assert settings.openai_reasoning_level == "high"
+    assert settings.data_dir == Path("custom-data")
+    assert settings.summary_max_days == 3
+    assert settings.summary_max_messages == 200
+    assert settings.summary_max_characters == 3000
+    assert settings.upload_max_bytes == 4000
+    assert settings.tts_max_characters == 500
+    assert settings.max_tool_calls == 2

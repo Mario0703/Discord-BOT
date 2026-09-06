@@ -3,17 +3,24 @@
 
 class ConfigurationError(RuntimeError):
     """Raised when required application configuration is invalid or missing."""
+
     pass
 
 
 class OptionalFeatureUnavailableError(RuntimeError):
     """Raised when an optional feature is not configured or available."""
+
     pass
 
 
 class MissingConfigurationError(ConfigurationError):
     """Raised when a required configuration is missing."""
+
     pass
+
+
+class ToolCallLimitError(RuntimeError):
+    """Raised when an OpenAI response exceeds the configured tool-call limit."""
 
 
 class Errors:

@@ -1,5 +1,6 @@
 import discord
 
+from bot.errors import ToolCallLimitError
 from bot.Settings import settings
 
 from ..tools.message_formatting import MessageFormatting
@@ -23,9 +24,13 @@ def register(
     @technical.command(name="code_review", description="Review source code")
     async def code_review(ctx: discord.ApplicationContext, language: str, code: str):
         await ctx.defer()
-        review = format_code_review(
-            await code_review_service.do_code_review_with_promt(language, code, ctx)
-        )
+        try:
+            review = format_code_review(
+                await code_review_service.do_code_review_with_promt(language, code, ctx)
+            )
+        except ToolCallLimitError as error:
+            await MessageFormatting.send_followup(ctx, str(error))
+            return
         await MessageFormatting.send_followup(
             ctx,
             review,

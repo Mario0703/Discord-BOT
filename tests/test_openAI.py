@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from openai import BadRequestError, NotFoundError
 
+from bot.errors import ToolCallLimitError
 from bot.modules.client.openAI.openai_client_impl import OpenAiCLientImpl
 from bot.storage.model_selections import ModelSelectionStore
 from bot.storage.token_usage import TokenUsage
@@ -279,3 +280,40 @@ def test_model_selection_store_returns_the_saved_selection(tmp_path: Path):
     assert selection is not None
     assert selection.model_name == "gpt-5.6-terra"
     assert selection.reasoning_level == "medium"
+
+
+def test_openai_stops_when_tool_call_limit_is_exceeded(tmp_path: Path):
+    first_call = Mock(
+        type="function_call",
+        name="test_tool",
+        call_id="call_1",
+        arguments="{}",
+    )
+    second_call = Mock(
+        type="function_call",
+        name="test_tool",
+        call_id="call_2",
+        arguments="{}",
+    )
+    mock_client = Mock()
+    mock_client.responses.create = AsyncMock(
+        return_value=Mock(output=[first_call, second_call], usage=None)
+    )
+    conversations = UserConversations(tmp_path / "conversations.json")
+    conversations.update_conversation(12345, "conv_existing")
+    service = OpenAiCLientImpl(
+        tools=[],
+        client=mock_client,
+        settings=make_test_settings(max_tool_calls=1),
+        user_conversations=conversations,
+        token_usage=TokenUsage(tmp_path / "token_usage.json"),
+        model_selection_store=ModelSelectionStore(tmp_path / "models.json"),
+    )
+
+    with pytest.raises(ToolCallLimitError, match="maximum of 1 tool calls"):
+        asyncio.run(
+            service.generate_repsone_from_openAI(
+                "Use tools",
+                Mock(author=Mock(id=12345)),
+            )
+        )
