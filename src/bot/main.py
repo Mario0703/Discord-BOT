@@ -9,6 +9,9 @@ from .modules.client.openAI.openai_client_impl import OpenAiCLientImpl
 from .modules.client.openAI.summary import SummaryOpenAI
 from .modules.client.openAI.top_deals import TopDealsService
 from .modules.client.openAI.transcript import Transcript
+from .storage.model_selections import ModelSelectionStore
+from .storage.token_usage import TokenUsage
+from .storage.user_conversations import UserConversations
 from .tools.games_deal import GamesDealTool
 from .tools.weather_tool import WeatherTool
 
@@ -17,12 +20,24 @@ def create_discord_bot(settings: Settings) -> discord.Bot:
     intents = discord.Intents.default()
     intents.message_content = True
     bot = discord.Bot(intents=intents)
+    settings.data_dir.mkdir(parents=True, exist_ok=True)
+
+    user_conversations = UserConversations(
+        settings.data_dir / "user_conversations.json"
+    )
+    token_usage = TokenUsage(settings.data_dir / "token_usage.json")
+    model_selections = ModelSelectionStore(
+        settings.data_dir / "model_selections.json"
+    )
 
     game_deals_tool = GamesDealTool()
     weather_tool = WeatherTool()
     openai_service = OpenAiCLientImpl(
         tools=[game_deals_tool, weather_tool],
         settings=settings,
+        user_conversations=user_conversations,
+        token_usage=token_usage,
+        model_selection_store=model_selections,
     )
     top_deals_service = TopDealsService(openai_service, game_deals_tool)
     code_review_service = CodeReview(openai_service)
@@ -32,7 +47,7 @@ def create_discord_bot(settings: Settings) -> discord.Bot:
 
     register_pycord_command(
         bot,
-        settings.guild_ids,
+        settings,
         openai_service,
         top_deals_service,
         code_review_service,

@@ -73,7 +73,9 @@ async def _collect_summary_messages(
 
 
 def register(bot, summary_service, settings: Settings, summary_date_range):
-    general = bot.create_group("general", "General bot commands", guild_ids=settings.guild_ids)
+    general = bot.create_group(
+        "general", "General bot commands", guild_ids=settings.guild_ids
+    )
 
     @general.command(name="hello", description="Say hello")
     async def hello(ctx: discord.ApplicationContext):

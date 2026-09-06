@@ -10,7 +10,11 @@ def _is_administrator(ctx: discord.ApplicationContext) -> bool:
 
 
 def register(
-    bot, openai_service, code_review_service, settings: settings.Settings, format_code_review
+    bot,
+    openai_service,
+    code_review_service,
+    settings: settings.Settings,
+    format_code_review,
 ) -> None:
     technical = bot.create_group(
         "technical", "Tech related commands", guild_ids=settings.guild_ids
