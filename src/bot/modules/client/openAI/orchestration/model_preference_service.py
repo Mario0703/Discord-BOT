@@ -23,8 +23,11 @@ class ModelPreferenceService:
         self.settings = settings
 
     def resolve(self, user_id: str | int) -> tuple[str, str | None]:
-        selection = self.model_selection_store.selections.get(str(user_id))
+        selection = self.get_selection(user_id)
         return resolve_model_settings(selection, self.settings)
+
+    def get_selection(self, user_id: str | int) -> ModelSelection | None:
+        return self.model_selection_store.selections.get(str(user_id))
 
     async def get_model_info(self) -> dict[str, tuple[str, ...]]:
         models = await self.gateway.get_models()
@@ -50,4 +53,4 @@ class ModelPreferenceService:
             model_id,
             reasoning_level,
         )
-        return self.model_selection_store.selections.get(str(user_id))
+        return self.get_selection(user_id)

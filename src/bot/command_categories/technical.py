@@ -12,7 +12,7 @@ def _is_administrator(ctx: discord.ApplicationContext) -> bool:
 
 def register(
     bot,
-    openai_service,
+    token_usage,
     code_review_service,
     settings: settings.Settings,
     format_code_review,
@@ -26,7 +26,11 @@ def register(
         await ctx.defer()
         try:
             review = format_code_review(
-                await code_review_service.do_code_review_with_promt(language, code, ctx)
+                await code_review_service.do_code_review(
+                    language,
+                    code,
+                    ctx.author.id,
+                )
             )
         except ToolCallLimitError as error:
             await MessageFormatting.send_followup(ctx, str(error))
@@ -51,7 +55,7 @@ def register(
             )
             return
 
-        report = openai_service.token_usage.report()
+        report = token_usage.report()
         if not report:
             await MessageFormatting.send_response(
                 ctx,

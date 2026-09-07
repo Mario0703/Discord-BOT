@@ -128,8 +128,12 @@ def register(bot, summary_service, settings: Settings, summary_date_range):
             )
             return
         try:
-            summary = await summary_service.summerice_channel_history_start_to_end(
-                channel.name, start, end, messages, ctx
+            summary = await summary_service.summarize_channel_history(
+                channel.name,
+                start,
+                end,
+                messages,
+                ctx.author.id,
             )
         except ToolCallLimitError as error:
             await MessageFormatting.send_followup(ctx, str(error))

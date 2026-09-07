@@ -1,12 +1,10 @@
-from unittest.mock import Mock
-
 import pytest
 
 from bot.errors import MissingConfigurationError, OptionalFeatureUnavailableError
 from bot.modules.client.API.is_there_such_deal import Deals
 from bot.modules.client.API.weather import OpenWeather
 from bot.modules.client.ElevenLabs.elevenlabs import ElevenLabsClient
-from bot.modules.client.openAI.openai_client_impl import OpenAiCLientImpl
+from bot.modules.client.openAI.orchestration import OpenAIGateway
 from bot.Settings.settings import Settings
 
 
@@ -24,10 +22,7 @@ def test_openai_reports_missing_required_api_key():
         MissingConfigurationError,
         match="OpenAI API key is required.",
     ):
-        OpenAiCLientImpl(
-            client=Mock(),
-            settings=_settings(openai_api_key=""),
-        )
+        OpenAIGateway(settings=_settings(openai_api_key=""))
 
 
 @pytest.mark.parametrize(

@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 from bot.tools.tool import tool as Tool
 
@@ -18,7 +19,7 @@ class ToolDispatcher:
                 return available_tool
         return None
 
-    async def execute_tool_calls(self, response) -> list[dict]:
+    async def execute_tool_calls(self, response: Any) -> list[dict]:
         tool_outputs = []
         for output_item in response.output:
             if output_item.type != "function_call":

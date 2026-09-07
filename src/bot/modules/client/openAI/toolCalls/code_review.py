@@ -1,20 +1,18 @@
-import discord
-
-from ..openai_client_impl import OpenAiCLientImpl
+from ..orchestration import AssistantService
 from .prompts import code_review_prompt
 
 
 class CodeReview:
     "Does a code review using the OpenAI service with a language-specific prompt."
 
-    def __init__(self, openai_service: OpenAiCLientImpl):
-        self.openai_service = openai_service
+    def __init__(self, assistant_service: AssistantService):
+        self.assistant_service = assistant_service
 
-    async def do_code_review_with_promt(
+    async def do_code_review(
         self,
         language: str,
         code: str,
-        ctx: discord.ApplicationContext,
+        user_id: str | int,
     ) -> str:
         prompt = code_review_prompt(language, code)
-        return await self.openai_service.generate_repsone_from_openAI(prompt, ctx)
+        return await self.assistant_service.get_stateless_response(prompt, user_id)
