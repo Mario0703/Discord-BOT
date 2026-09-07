@@ -1,13 +1,13 @@
-from typing import Any
+import asyncio
 
-from bot.Settings.settings import Settings
+from bot.settings.settings import Settings
 
-from ..modules.client.API.weather import OpenWeather
-from .tool import tool
+from ..modules.client.api.weather import OpenWeather
+from .tool import Tool
 
 
-class WeatherTool(tool):
-    def __init__(self, settings: Settings):
+class WeatherTool(Tool):
+    def __init__(self, settings: Settings) -> None:
         self.settings = settings
         self.name = "get_current_weather"
         self.description = (
@@ -37,19 +37,11 @@ class WeatherTool(tool):
             "additionalProperties": False,
         }
 
-    def definition(self) -> dict[str, Any]:
-        return {
-            "type": "function",
-            "name": self.name,
-            "description": self.description,
-            "parameters": self.parameters,
-        }
-
-    async def execute(self, **kwargs: Any) -> dict[str, Any]:
+    async def execute(self, **kwargs: object) -> dict[str, object]:
         weather = OpenWeather(
-            city_name=kwargs["city_name"],
-            state_code=kwargs["state_code"],
-            country_code=kwargs["country_code"],
+            city_name=self.string_argument(kwargs, "city_name"),
+            state_code=self.string_argument(kwargs, "state_code"),
+            country_code=self.string_argument(kwargs, "country_code"),
             settings=self.settings,
         )
-        return weather.get_weather()
+        return await asyncio.to_thread(weather.get_weather)

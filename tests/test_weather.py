@@ -1,10 +1,10 @@
 from unittest.mock import Mock, patch
 
-from bot.modules.client.API.weather import OpenWeather
-from bot.Settings.settings import Settings
+from bot.modules.client.api.weather import OpenWeather
+from bot.settings.settings import Settings
 
 
-@patch("bot.modules.client.API.weather.requests.get")
+@patch("bot.modules.client.api.weather.requests.get")
 def test_get_weather_uses_geocoded_coordinates(mock_get):
     geocoding_response = Mock()
     geocoding_response.json.return_value = [{"lat": 55.6761, "lon": 12.5683}]

@@ -1,13 +1,33 @@
 """Application exceptions and safe user-facing error messages."""
 
 
-class ConfigurationError(RuntimeError):
+class ApplicationError(RuntimeError):
+    """An expected failure with a message safe for users and tool results."""
+
+
+class InvalidInput(ApplicationError, ValueError):
+    """The supplied arguments are invalid."""
+
+
+class AccessDenied(ApplicationError):
+    """The caller lacks permission to perform this operation."""
+
+
+class ResourceNotFound(ApplicationError, LookupError):
+    """The requested resource does not exist."""
+
+
+class ExternalServiceUnavailable(ApplicationError):
+    """A provider could not complete the request."""
+
+
+class ConfigurationError(ApplicationError):
     """Raised when required application configuration is invalid or missing."""
 
     pass
 
 
-class OptionalFeatureUnavailableError(RuntimeError):
+class OptionalFeatureUnavailableError(ExternalServiceUnavailable):
     """Raised when an optional feature is not configured or available."""
 
     pass
@@ -19,31 +39,5 @@ class MissingConfigurationError(ConfigurationError):
     pass
 
 
-class ToolCallLimitError(RuntimeError):
+class ToolCallLimitError(InvalidInput):
     """Raised when an OpenAI response exceeds the configured tool-call limit."""
-
-
-class Errors:
-    """Build consistent, safe messages for errors shown to Discord users."""
-
-    @staticmethod
-    def missing_configuration(variable_name: str) -> str:
-        return (
-            f"The bot is missing required configuration for `{variable_name}`. "
-            "Please contact an administrator."
-        )
-
-    @staticmethod
-    def feature_unavailable(feature_name: str) -> str:
-        return (
-            f"The {feature_name} feature is currently unavailable because it "
-            "has not been configured."
-        )
-
-    @staticmethod
-    def operation_failed(operation: str) -> str:
-        return f"I could not complete the {operation}. " "Please try again later."
-
-    @staticmethod
-    def invalid_input(message: str) -> str:
-        return f"Invalid input: {message}"

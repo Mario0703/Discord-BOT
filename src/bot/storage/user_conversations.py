@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from typing import cast
 
 
 class UserConversations:
@@ -12,7 +13,7 @@ class UserConversations:
             return {}
 
         with self.file_path.open("r", encoding="utf-8") as file:
-            return json.load(file)
+            return cast(dict[str, str], json.load(file))
 
     def _save(self) -> None:
         with self.file_path.open("w", encoding="utf-8") as file:

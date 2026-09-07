@@ -55,7 +55,7 @@ class Settings:
 def _required(name: str) -> str:
     value = os.getenv(name)
     if not value:
-        raise RuntimeError(
+        raise ConfigurationError(
             f"Missing required environment variable: {name}. "
             "Copy .env.example to .env and fill in the required values."
         )
@@ -67,12 +67,12 @@ def _guild_ids() -> tuple[int, ...]:
     try:
         guild_ids = tuple(int(value.strip()) for value in raw_value.split(","))
     except ValueError as error:
-        raise RuntimeError(
+        raise ConfigurationError(
             "GUILD_IDS must contain comma-separated Discord server IDs."
         ) from error
 
     if not guild_ids:
-        raise RuntimeError("GUILD_IDS must contain at least one server ID.")
+        raise ConfigurationError("GUILD_IDS must contain at least one server ID.")
     return guild_ids
 
 

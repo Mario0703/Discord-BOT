@@ -1,11 +1,11 @@
 import pytest
 
 from bot.errors import MissingConfigurationError, OptionalFeatureUnavailableError
-from bot.modules.client.API.is_there_such_deal import Deals
-from bot.modules.client.API.weather import OpenWeather
-from bot.modules.client.ElevenLabs.elevenlabs import ElevenLabsClient
-from bot.modules.client.openAI.orchestration import OpenAIGateway
-from bot.Settings.settings import Settings
+from bot.modules.client.api.is_there_such_deal import IsThereAnyDealClient
+from bot.modules.client.api.weather import OpenWeather
+from bot.modules.client.elevenlabs.elevenlabs import ElevenLabsClient
+from bot.modules.client.openai.orchestration import OpenAIGateway
+from bot.settings.settings import Settings
 
 
 def _settings(**overrides) -> Settings:
@@ -39,7 +39,7 @@ def test_openai_reports_missing_required_api_key():
             "Weather is unavailable",
         ),
         (
-            lambda: Deals("DK", 61, (80, 100), settings=_settings()),
+            lambda: IsThereAnyDealClient("DK", 61, (80, 100), settings=_settings()),
             "Deals are unavailable",
         ),
     ],

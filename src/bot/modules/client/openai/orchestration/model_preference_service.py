@@ -1,5 +1,5 @@
 from bot.openai_models import MODEL_REASONING_LEVELS
-from bot.Settings.settings import Settings
+from bot.settings.settings import Settings
 from bot.storage.model_selections import (
     ModelSelection,
     ModelSelectionStore,

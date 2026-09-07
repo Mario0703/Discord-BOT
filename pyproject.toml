@@ -8,10 +8,10 @@ version = "0.1.0"
 description = "A Discord bot built with Pycord and the OpenAI SDK."
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = ["elevenlabs", "openai", "py-cord", "python-dotenv" ,"httpx"]
+dependencies = ["elevenlabs", "openai", "py-cord[voice]", "python-dotenv", "httpx", "requests"]
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-asyncio", "ruff", "black", "mypy"]
+dev = ["pytest", "pytest-asyncio", "ruff", "black", "mypy", "types-requests"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -38,4 +38,6 @@ disallow_untyped_defs = true
 disallow_untyped_calls = true
 no_implicit_optional = true
 check_untyped_defs = true
-ignore_missing_imports = true
+disallow_any_generics = true
+warn_return_any = true
+warn_unused_ignores = true

@@ -1,7 +1,7 @@
 import asyncio
 from unittest.mock import AsyncMock, Mock
 
-from bot.modules.client.openAI.orchestration import AssistantService
+from bot.modules.client.openai.orchestration import AssistantService
 from bot.storage.token_usage import TokenUsage
 from bot.storage.user_conversations import UserConversations
 from tests.helpers import make_test_settings
@@ -34,8 +34,8 @@ def test_conversations_are_isolated_by_workflow(tmp_path):
     service = _service(tmp_path, gateway, dispatcher)
 
     async def run_requests():
-        await service.get_response("Hello", 123, workflow="assistant")
-        await service.get_response("Review", 123, workflow="code_review")
+        await service.generate_response("Hello", 123, workflow="assistant")
+        await service.generate_response("Review", 123, workflow="code_review")
 
     asyncio.run(run_requests())
 
@@ -49,9 +49,7 @@ def test_stateless_tool_follow_up_uses_previous_response_id(tmp_path):
     first_response = Mock(id="response_1", output=[tool_call], usage=None)
     final_response = Mock(id="response_2", output=[], output_text="Done", usage=None)
     gateway = Mock()
-    gateway.create_response = AsyncMock(
-        side_effect=[first_response, final_response]
-    )
+    gateway.create_response = AsyncMock(side_effect=[first_response, final_response])
     dispatcher = Mock()
     dispatcher.get_tool_definitions.return_value = []
     dispatcher.execute_tool_calls = AsyncMock(

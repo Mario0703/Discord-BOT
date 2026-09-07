@@ -1,4 +1,4 @@
-from bot.Settings.settings import Settings
+from bot.settings.settings import Settings
 
 
 def make_test_settings(**overrides) -> Settings:
