@@ -1,11 +1,18 @@
-from collections.abc import Iterable
+import logging
+from collections.abc import Iterable, Iterator
 from pathlib import Path
 
+import httpx
 from elevenlabs.client import ElevenLabs
-from elevenlabs.play import play
+from elevenlabs.core.api_error import ApiError
 
-from bot.errors import MissingConfigurationError, OptionalFeatureUnavailableError
-from bot.Settings.settings import Settings
+from bot.errors import (
+    ExternalServiceUnavailable,
+    InvalidInput,
+    MissingConfigurationError,
+    OptionalFeatureUnavailableError,
+)
+from bot.settings.settings import Settings
 
 
 class ElevenLabsClient:
@@ -16,7 +23,7 @@ class ElevenLabsClient:
         voice_id: str = "JBFqnCBsd6RMkjVDRZzb",
         model_id: str = "eleven_multilingual_v2",
         settings: Settings | None = None,
-    ):
+    ) -> None:
         if settings is None:
             raise MissingConfigurationError("Settings are required.")
 
@@ -30,7 +37,7 @@ class ElevenLabsClient:
             else None
         )
 
-    def convert_text_to_speech(self, text: str) -> Iterable[bytes]:
+    def convert_text_to_speech(self, text: str) -> Iterator[bytes]:
         """Return generated audio chunks for the supplied text."""
         if self.client is None:
             raise OptionalFeatureUnavailableError(
@@ -38,14 +45,31 @@ class ElevenLabsClient:
                 "is not configured."
             )
         if not text or not text.strip():
-            raise ValueError("Text to convert cannot be empty")
+            raise InvalidInput("Text to convert cannot be empty")
 
-        return self.client.text_to_speech.convert(
-            voice_id=self.voice_id,
-            model_id=self.model_id,
-            output_format="mp3_44100_128",
-            text=text,
-        )
+        if len(text) > self.settings.tts_max_characters:
+            raise InvalidInput(
+                "The text cannot exceed "
+                f"{self.settings.tts_max_characters:,} characters."
+            )
+        return self._audio_chunks(text)
+
+    def _audio_chunks(self, text: str) -> Iterator[bytes]:
+        assert self.client is not None
+        try:
+            yield from self.client.text_to_speech.convert(
+                voice_id=self.voice_id,
+                model_id=self.model_id,
+                output_format="mp3_44100_128",
+                text=text,
+            )
+        except (ApiError, httpx.HTTPError) as error:
+            logging.getLogger(__name__).warning(
+                "ElevenLabs request failed (%s)", type(error).__name__
+            )
+            raise ExternalServiceUnavailable(
+                "Speech generation is temporarily unavailable."
+            ) from error
 
     def save_audio(
         self,
@@ -64,7 +88,3 @@ class ElevenLabsClient:
                     output_file.write(chunk)
 
         return path
-
-    def play_audio(self, audio: Iterable[bytes]) -> None:
-        """Play generated audio locally; requires a supported player such as MPV."""
-        play(audio)

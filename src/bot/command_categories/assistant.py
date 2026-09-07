@@ -1,27 +1,32 @@
 import discord
 
 from bot.errors import OptionalFeatureUnavailableError, ToolCallLimitError
-from bot.Settings.settings import Settings
+from bot.modules.client.openai.orchestration import (
+    AssistantService,
+    ModelPreferenceService,
+)
+from bot.modules.client.openai.tool_calls.top_deals import TopDealsService
+from bot.settings.settings import Settings
 
 from ..tools.message_formatting import MessageFormatting
 
 
 def register(
-    bot,
-    assistant_service,
-    model_preferences,
-    top_deals_service,
+    bot: discord.Bot,
+    assistant_service: AssistantService,
+    model_preferences: ModelPreferenceService,
+    top_deals_service: TopDealsService,
     settings: Settings,
-):
+) -> None:
     assistant = bot.create_group(
-        "assistant", "AI assistant commands", guild_ids=settings.guild_ids
+        "assistant", "AI assistant commands", guild_ids=list(settings.guild_ids)
     )
 
     @assistant.command(name="ask", description="Ask Luna a question")
-    async def ask_openai(ctx: discord.ApplicationContext, question: str):
+    async def ask_openai(ctx: discord.ApplicationContext, question: str) -> None:
         await ctx.defer()
         try:
-            answer = await assistant_service.get_response(question, ctx.author.id)
+            answer = await assistant_service.generate_response(question, ctx.author.id)
         except ToolCallLimitError as error:
             await MessageFormatting.send_followup(ctx, str(error))
             return
@@ -32,7 +37,8 @@ def register(
     @assistant.command(
         name="clear_conversation", description="Clear your Luna conversation history"
     )
-    async def clear_conversation(ctx: discord.ApplicationContext):
+    async def clear_conversation(ctx: discord.ApplicationContext) -> None:
+        await ctx.defer()
         cleared = await assistant_service.clear_conversation(ctx.author.id)
         response_message = ""
 
@@ -46,7 +52,7 @@ def register(
         )
 
     @assistant.command(name="deals", description="Get the top Steam deals")
-    async def deals(ctx: discord.ApplicationContext):
+    async def deals(ctx: discord.ApplicationContext) -> None:
         await ctx.defer()
         try:
             text = await top_deals_service.get_top_steam_deals(ctx.author.id)
@@ -58,7 +64,7 @@ def register(
         )
 
     @assistant.command(name="model", description="List the models available for openAI")
-    async def list_models(ctx: discord.ApplicationContext):
+    async def list_models(ctx: discord.ApplicationContext) -> None:
         await ctx.defer()
         models = await model_preferences.get_model_info()
 
@@ -94,7 +100,7 @@ def register(
         ctx: discord.ApplicationContext,
         model_id: str,
         reasoning_level: str,
-    ):
+    ) -> None:
         await ctx.defer()
         selection = model_preferences.set_user_model(
             ctx.author.id,
@@ -120,7 +126,7 @@ def register(
         name="show_my_model",
         description="Show your selected OpenAI model and reasoning level",
     )
-    async def show_my_model(ctx: discord.ApplicationContext):
+    async def show_my_model(ctx: discord.ApplicationContext) -> None:
         selection = model_preferences.get_selection(ctx.author.id)
 
         if selection is None:
@@ -133,11 +139,9 @@ def register(
             )
             return
 
-        model_id = selection.model_name
-        reasoning_level = selection.reasoning_level
         await MessageFormatting.send_response(
             ctx,
-            f"Your selected model is `{model_id}` with reasoning level "
-            f"`{reasoning_level}`.",
+            f"Your selected model is `{selection.model_name}` with reasoning level "
+            f"`{selection.reasoning_level}`.",
             allowed_mentions=discord.AllowedMentions.none(),
         )

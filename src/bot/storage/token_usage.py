@@ -3,33 +3,41 @@ from __future__ import annotations
 import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import TypedDict, cast
+
+
+class UsageRecord(TypedDict):
+    user_id: str
+    timestamp: str
+    input_tokens: int
+    output_tokens: int
 
 
 class TokenUsage:
-    def __init__(self, file_path="token_usage.json"):
+    def __init__(self, file_path: str | Path = "token_usage.json") -> None:
         self.file_path = Path(file_path)
         self.records = self._load()
 
-    def _load(self):
+    def _load(self) -> list[UsageRecord]:
         if not self.file_path.exists():
             return []
 
         with self.file_path.open("r", encoding="utf-8") as file:
-            return json.load(file)
+            return cast(list[UsageRecord], json.load(file))
 
-    def _save(self):
+    def _save(self) -> None:
         with self.file_path.open("w", encoding="utf-8") as file:
             json.dump(self.records, file, indent=2)
 
     def record(
         self,
-        user_id,
+        user_id: str | int,
         input_tokens: int,
         output_tokens: int,
     ) -> None:
         recorded_at = datetime.now(timezone.utc).isoformat()
 
-        usage_record = {
+        usage_record: UsageRecord = {
             "user_id": str(user_id),
             "timestamp": recorded_at,
             "input_tokens": input_tokens,

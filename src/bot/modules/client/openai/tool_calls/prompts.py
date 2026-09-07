@@ -1,10 +1,4 @@
 import json
-from typing import Any
-
-
-def assistant_prompt(prompt: str) -> str:
-    """Return the prompt used for a normal assistant question."""
-    return prompt
 
 
 def code_review_prompt(language: str, code: str) -> str:
@@ -77,7 +71,7 @@ def summary_prompt(channel_name: str, start: str, end: str, messages: str) -> st
     """
 
 
-def ranking_prompt(deals: list[dict[str, Any]]) -> str:
+def ranking_prompt(deals: list[dict[str, object]]) -> str:
     """Build the prompt used to rank Steam deals."""
     instructions = """
     Find the three hottest Steam deals in the supplied JSON data and rank them from

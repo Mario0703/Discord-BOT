@@ -1,13 +1,13 @@
-from typing import Any
+import asyncio
 
-from bot.Settings.settings import Settings
+from bot.settings.settings import Settings
 
-from ..modules.client.API.is_there_such_deal import Deals
-from .tool import tool
+from ..modules.client.api.is_there_such_deal import IsThereAnyDealClient
+from .tool import Tool
 
 
-class GamesDealTool(tool):
-    def __init__(self, settings: Settings):
+class GamesDealTool(Tool):
+    def __init__(self, settings: Settings) -> None:
         self.settings = settings
         self.name = "get_game_deals"
         self.description = "Find game deals from IsThereAnyDeal."
@@ -35,19 +35,14 @@ class GamesDealTool(tool):
             "additionalProperties": False,
         }
 
-    def definition(self) -> dict[str, Any]:
-        return {
-            "type": "function",
-            "name": self.name,
-            "description": self.description,
-            "parameters": self.parameters,
-        }
-
-    async def execute(self, **kwargs: Any) -> dict[str, Any]:
-        deals = Deals(
-            country=kwargs["country"],
-            shop=kwargs["shop"],
-            discount_range=(kwargs["discount_min"], kwargs["discount_max"]),
+    async def execute(self, **kwargs: object) -> dict[str, object]:
+        deals = IsThereAnyDealClient(
+            country=self.string_argument(kwargs, "country"),
+            shop=self.integer_argument(kwargs, "shop"),
+            discount_range=(
+                self.integer_argument(kwargs, "discount_min"),
+                self.integer_argument(kwargs, "discount_max"),
+            ),
             settings=self.settings,
         )
-        return deals.get_steam_deals()
+        return await asyncio.to_thread(deals.get_steam_deals)

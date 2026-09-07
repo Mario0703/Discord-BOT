@@ -1,19 +1,19 @@
 import discord
 
-from bot.Settings.settings import Settings
+from bot.settings.settings import Settings
 
 from .command_categories.registration import register_pycord_command
-from .modules.client.ElevenLabs.elevenlabs import ElevenLabsClient
-from .modules.client.openAI.orchestration import (
+from .modules.client.elevenlabs.elevenlabs import ElevenLabsClient
+from .modules.client.openai.orchestration import (
     AssistantService,
     ModelPreferenceService,
     OpenAIGateway,
     ToolDispatcher,
 )
-from .modules.client.openAI.toolCalls.code_review import CodeReview
-from .modules.client.openAI.toolCalls.summary import SummaryOpenAI
-from .modules.client.openAI.toolCalls.top_deals import TopDealsService
-from .modules.client.openAI.toolCalls.transcript import Transcript
+from .modules.client.openai.tool_calls.code_review import CodeReview
+from .modules.client.openai.tool_calls.summary import SummaryOpenAI
+from .modules.client.openai.tool_calls.top_deals import TopDealsService
+from .modules.client.openai.tool_calls.transcript import Transcript
 from .storage.model_selections import ModelSelectionStore
 from .storage.token_usage import TokenUsage
 from .storage.user_conversations import UserConversations
@@ -24,7 +24,7 @@ from .tools.weather_tool import WeatherTool
 def create_discord_bot(settings: Settings) -> discord.Bot:
     intents = discord.Intents.default()
     intents.message_content = True
-    bot = discord.Bot(intents=intents)
+    bot = discord.Bot(intents=intents)  # type: ignore[no-untyped-call]  # Pycord constructor lacks annotations.
     settings.data_dir.mkdir(parents=True, exist_ok=True)
 
     user_conversations = UserConversations(

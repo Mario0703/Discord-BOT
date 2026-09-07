@@ -2,14 +2,14 @@ import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock, Mock
 
-from bot.modules.client.openAI.orchestration import (
+from bot.modules.client.openai.orchestration import (
     AssistantService,
     ModelPreferenceService,
     OpenAIGateway,
     ToolDispatcher,
 )
-from bot.modules.client.openAI.toolCalls.code_review import CodeReview
-from bot.modules.client.openAI.toolCalls.prompts import code_review_prompt
+from bot.modules.client.openai.tool_calls.code_review import CodeReview
+from bot.modules.client.openai.tool_calls.prompts import code_review_prompt
 from bot.storage.model_selections import ModelSelectionStore
 from bot.storage.token_usage import TokenUsage
 from bot.storage.user_conversations import UserConversations
@@ -40,9 +40,7 @@ def test_code_review_is_stateless_and_uses_saved_user_profile(tmp_path: Path):
     )
     service = CodeReview(assistant)
 
-    result = asyncio.run(
-        service.do_code_review("python", "print('hello')", 12345)
-    )
+    result = asyncio.run(service.review_code("python", "print('hello')", 12345))
 
     assert result == "Review complete"
     request = client.responses.create.await_args.kwargs

@@ -5,7 +5,7 @@ from .prompts import summary_prompt
 class SummaryOpenAI:
     """Create summaries of messages collected from Discord channels."""
 
-    def __init__(self, assistant_service: AssistantService):
+    def __init__(self, assistant_service: AssistantService) -> None:
         self.assistant_service = assistant_service
 
     async def summarize_channel_history(

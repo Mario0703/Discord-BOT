@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from openai import BadRequestError, NotFoundError
 
-from bot.errors import ToolCallLimitError
-from bot.modules.client.openAI.orchestration import (
+from bot.errors import InvalidInput, ToolCallLimitError
+from bot.modules.client.openai.orchestration import (
     AssistantService,
     ModelPreferenceService,
     OpenAIGateway,
@@ -79,7 +79,7 @@ def test_assistant_completes_tool_calls(tmp_path: Path, tool_status: str):
         conversations=conversations,
     )
 
-    result = asyncio.run(service.get_response("Weather?", 12345))
+    result = asyncio.run(service.generate_response("Weather?", 12345))
 
     assert result == "Done"
     follow_up = client.responses.create.await_args_list[1].kwargs
@@ -93,7 +93,10 @@ def test_assistant_completes_tool_calls(tmp_path: Path, tool_status: str):
     else:
         tool.execute.assert_awaited_once_with(city="Oslo")
         if tool_status == "failure":
-            expected_result = {"error": "Weather unavailable"}
+            expected_result = {
+                "error": "The tool could not complete the request. "
+                "Please try again later."
+            }
     assert follow_up["input"] == [
         {
             "type": "function_call_output",
@@ -124,7 +127,7 @@ def test_assistant_creates_and_saves_conversation(tmp_path: Path):
         usage=usage,
     )
 
-    result = asyncio.run(service.get_response("Say hello", 12345))
+    result = asyncio.run(service.generate_response("Say hello", 12345))
 
     assert result == "Hello"
     assert conversations.get_conversation(12345) == "conv_test"
@@ -154,7 +157,7 @@ def test_assistant_replaces_stale_conversation(tmp_path: Path, recoverable: str)
     conversations.update_conversation(12345, "conv_stale")
     service, _ = _service(tmp_path, client, conversations=conversations)
 
-    result = asyncio.run(service.get_response("Hello", 12345))
+    result = asyncio.run(service.generate_response("Hello", 12345))
 
     assert result == "Recovered"
     assert conversations.get_conversation(12345) == "conv_new"
@@ -175,8 +178,8 @@ def test_assistant_does_not_reset_for_other_bad_requests(tmp_path: Path):
     conversations.update_conversation(12345, "conv_existing")
     service, _ = _service(tmp_path, client, conversations=conversations)
 
-    with pytest.raises(BadRequestError):
-        asyncio.run(service.get_response("Hello", 12345))
+    with pytest.raises(InvalidInput):
+        asyncio.run(service.generate_response("Hello", 12345))
 
     client.conversations.create.assert_not_called()
     assert conversations.get_conversation(12345) == "conv_existing"
@@ -192,7 +195,7 @@ def test_assistant_uses_saved_model_selection(tmp_path: Path):
     selections.set_selection(12345, "gpt-5.6-sol", "high")
     service, _ = _service(tmp_path, client, selections=selections)
 
-    asyncio.run(service.get_response("Say hello", 12345))
+    asyncio.run(service.generate_response("Say hello", 12345))
 
     request = client.responses.create.await_args.kwargs
     assert request["model"] == "gpt-5.6-sol"
@@ -233,4 +236,4 @@ def test_assistant_stops_when_tool_call_limit_is_exceeded(tmp_path: Path):
     )
 
     with pytest.raises(ToolCallLimitError, match="maximum of 1 tool calls"):
-        asyncio.run(service.get_response("Use tools", 12345))
+        asyncio.run(service.generate_response("Use tools", 12345))

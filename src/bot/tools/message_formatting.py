@@ -1,5 +1,3 @@
-from typing import Any
-
 import discord
 
 
@@ -45,29 +43,37 @@ class MessageFormatting:
         cls,
         ctx: discord.ApplicationContext,
         message: str,
-        **kwargs: Any,
+        *,
+        allowed_mentions: discord.AllowedMentions | None = None,
+        ephemeral: bool = False,
     ) -> None:
         """Send a long response as one or more Discord follow-up messages."""
-        kwargs.setdefault("allowed_mentions", discord.AllowedMentions.none())
+        mentions = allowed_mentions or discord.AllowedMentions.none()
         for part in cls.split_message(message):
-            await ctx.followup.send(part, **kwargs)
+            await ctx.followup.send(
+                part, allowed_mentions=mentions, ephemeral=ephemeral
+            )
 
     @classmethod
     async def send_response(
         cls,
         ctx: discord.ApplicationContext,
         message: str,
-        **kwargs: Any,
+        *,
+        allowed_mentions: discord.AllowedMentions | None = None,
+        ephemeral: bool = False,
     ) -> None:
         """Send the first part as a response and remaining parts as follow-ups."""
-        kwargs.setdefault("allowed_mentions", discord.AllowedMentions.none())
+        mentions = allowed_mentions or discord.AllowedMentions.none()
         parts = cls.split_message(message)
         if not parts:
             return
 
-        await ctx.respond(parts[0], **kwargs)
+        await ctx.respond(parts[0], allowed_mentions=mentions, ephemeral=ephemeral)
         for part in parts[1:]:
-            await ctx.followup.send(part, **kwargs)
+            await ctx.followup.send(
+                part, allowed_mentions=mentions, ephemeral=ephemeral
+            )
 
     @staticmethod
     async def send_response_embed(
@@ -96,14 +102,19 @@ class MessageFormatting:
         cls,
         recipient: discord.abc.Messageable,
         message: str,
-        **kwargs: Any,
+        *,
+        allowed_mentions: discord.AllowedMentions | None = None,
+        file: discord.File | None = None,
     ) -> None:
         """Send a Discord-safe message directly to a user or channel."""
-        kwargs.setdefault("allowed_mentions", discord.AllowedMentions.none())
+        mentions = allowed_mentions or discord.AllowedMentions.none()
         parts = cls.split_message(message)
         if not parts:
             return
 
-        await recipient.send(parts[0], **kwargs)
+        if file is None:
+            await recipient.send(parts[0], allowed_mentions=mentions)
+        else:
+            await recipient.send(parts[0], file=file, allowed_mentions=mentions)
         for part in parts[1:]:
-            await recipient.send(part, **kwargs)
+            await recipient.send(part, allowed_mentions=mentions)

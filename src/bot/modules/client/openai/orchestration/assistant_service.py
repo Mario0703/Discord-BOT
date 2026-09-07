@@ -1,16 +1,20 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import cast
 
 from openai import BadRequestError, NotFoundError
+from openai.types.responses import Response
+from openai.types.shared import ReasoningEffort
+from openai.types.shared_params import Reasoning
 
-from bot.errors import ToolCallLimitError
-from bot.Settings.settings import Settings
+from bot.errors import InvalidInput, ToolCallLimitError
+from bot.settings.settings import Settings
 from bot.storage.token_usage import TokenUsage
 from bot.storage.user_conversations import UserConversations
 
 from .model_preference_service import ModelPreferenceService
 from .openai_gateway import OpenAIGateway
+from .provider_errors import openai_errors
 from .tool_dispatcher import ToolDispatcher
 
 
@@ -35,7 +39,7 @@ class AssistantService:
         self.input_token_count = 0
         self.output_token_count = 0
 
-    async def get_response(
+    async def generate_response(
         self,
         prompt: str,
         user_id: str | int,
@@ -54,51 +58,54 @@ class AssistantService:
         prompt: str,
         user_id: str | int,
         workflow: str = "assistant",
-    ) -> Any:
+    ) -> Response:
         """Create a response in a workflow-specific user conversation."""
-        conversation_id = self.conversations.get_conversation(user_id, workflow)
-        if conversation_id is None:
-            conversation_id = await self.gateway.create_conversation()
-            self.conversations.update_conversation(
-                user_id,
-                conversation_id,
-                workflow,
-            )
+        if not prompt.strip():
+            raise InvalidInput("The prompt must not be empty.")
+        async with openai_errors():
+            conversation_id = self.conversations.get_conversation(user_id, workflow)
+            if conversation_id is None:
+                conversation_id = await self.gateway.create_conversation()
+                self.conversations.update_conversation(
+                    user_id,
+                    conversation_id,
+                    workflow,
+                )
 
-        model_id, reasoning_level = self.model_preferences.resolve(user_id)
-        try:
-            response = await self._create_initial_response(
+            model_id, reasoning_level = self.model_preferences.resolve(user_id)
+            try:
+                response = await self._create_initial_response(
+                    prompt=prompt,
+                    model_id=model_id,
+                    reasoning_level=reasoning_level,
+                    conversation_id=conversation_id,
+                )
+            except (NotFoundError, BadRequestError) as error:
+                if isinstance(error, BadRequestError) and (
+                    "No tool output found for function call" not in error.message
+                ):
+                    raise
+
+                conversation_id = await self.gateway.create_conversation()
+                self.conversations.update_conversation(
+                    user_id,
+                    conversation_id,
+                    workflow,
+                )
+                response = await self._create_initial_response(
+                    prompt=prompt,
+                    model_id=model_id,
+                    reasoning_level=reasoning_level,
+                    conversation_id=conversation_id,
+                )
+            return await self._complete_response(
                 prompt=prompt,
                 model_id=model_id,
                 reasoning_level=reasoning_level,
+                user_id=user_id,
                 conversation_id=conversation_id,
+                initial_response=response,
             )
-        except (NotFoundError, BadRequestError) as error:
-            if isinstance(error, BadRequestError) and (
-                "No tool output found for function call" not in error.message
-            ):
-                raise
-
-            conversation_id = await self.gateway.create_conversation()
-            self.conversations.update_conversation(
-                user_id,
-                conversation_id,
-                workflow,
-            )
-            response = await self._create_initial_response(
-                prompt=prompt,
-                model_id=model_id,
-                reasoning_level=reasoning_level,
-                conversation_id=conversation_id,
-            )
-        return await self._complete_response(
-            prompt=prompt,
-            model_id=model_id,
-            reasoning_level=reasoning_level,
-            user_id=user_id,
-            conversation_id=conversation_id,
-            initial_response=response,
-        )
 
     async def get_stateless_response(
         self,
@@ -124,16 +131,19 @@ class AssistantService:
         reasoning_level: str | None,
         user_id: str | int | None = None,
         allow_tools: bool = True,
-    ) -> Any:
+    ) -> Response:
         """Create a stateless response, optionally attributing token usage."""
-        return await self._complete_response(
-            prompt=prompt,
-            model_id=model_id,
-            reasoning_level=reasoning_level,
-            user_id=user_id,
-            conversation_id=None,
-            allow_tools=allow_tools,
-        )
+        if not prompt.strip():
+            raise InvalidInput("The prompt must not be empty.")
+        async with openai_errors():
+            return await self._complete_response(
+                prompt=prompt,
+                model_id=model_id,
+                reasoning_level=reasoning_level,
+                user_id=user_id,
+                conversation_id=None,
+                allow_tools=allow_tools,
+            )
 
     async def clear_conversation(
         self,
@@ -156,10 +166,12 @@ class AssistantService:
         user_id: str | int | None,
         conversation_id: str | None,
         allow_tools: bool = True,
-        initial_response: Any | None = None,
-    ) -> Any:
-        reasoning = (
-            {"effort": reasoning_level} if reasoning_level is not None else None
+        initial_response: Response | None = None,
+    ) -> Response:
+        reasoning: Reasoning | None = (
+            {"effort": cast(ReasoningEffort, reasoning_level)}
+            if reasoning_level is not None
+            else None
         )
         tool_definitions = (
             self.tool_dispatcher.get_tool_definitions() if allow_tools else []
@@ -209,9 +221,11 @@ class AssistantService:
         model_id: str,
         reasoning_level: str | None,
         conversation_id: str,
-    ) -> Any:
-        reasoning = (
-            {"effort": reasoning_level} if reasoning_level is not None else None
+    ) -> Response:
+        reasoning: Reasoning | None = (
+            {"effort": cast(ReasoningEffort, reasoning_level)}
+            if reasoning_level is not None
+            else None
         )
         return await self.gateway.create_response(
             model_id=model_id,
@@ -221,7 +235,7 @@ class AssistantService:
             tool_definitions=self.tool_dispatcher.get_tool_definitions(),
         )
 
-    def _record_usage(self, user_id: str | int | None, response: Any) -> None:
+    def _record_usage(self, user_id: str | int | None, response: Response) -> None:
         if user_id is None or response.usage is None:
             return
         self.input_token_count += response.usage.input_tokens

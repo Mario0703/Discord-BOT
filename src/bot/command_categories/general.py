@@ -1,10 +1,12 @@
 import asyncio
+from collections.abc import Callable
 from datetime import datetime, timedelta
 
 import discord
 
-from bot.errors import ToolCallLimitError
-from bot.Settings.settings import Settings
+from bot.errors import AccessDenied, InvalidInput, ResourceNotFound, ToolCallLimitError
+from bot.modules.client.openai.tool_calls.summary import SummaryOpenAI
+from bot.settings.settings import Settings
 
 from ..tools.message_formatting import MessageFormatting
 
@@ -12,7 +14,7 @@ from ..tools.message_formatting import MessageFormatting
 def _validate_summary_dates(
     start: str,
     end: str,
-    summary_date_range,
+    summary_date_range: Callable[[str, str], tuple[datetime, datetime]],
     settings: Settings,
 ) -> tuple[datetime, datetime, str | None]:
     try:
@@ -40,7 +42,11 @@ def _validate_summary_dates(
     return start_date, end_date, None
 
 
-def _find_channel(ctx: discord.ApplicationContext, channel_name: str):
+def _find_channel(
+    ctx: discord.ApplicationContext, channel_name: str
+) -> discord.TextChannel | None:
+    if ctx.guild is None:
+        return None
     return discord.utils.get(
         ctx.guild.text_channels,
         name=channel_name.removeprefix("#"),
@@ -48,7 +54,10 @@ def _find_channel(ctx: discord.ApplicationContext, channel_name: str):
 
 
 async def _collect_summary_messages(
-    channel, start_date, end_date, settings: Settings
+    channel: discord.TextChannel,
+    start_date: datetime,
+    end_date: datetime,
+    settings: Settings,
 ) -> tuple[str, str | None]:
     messages = []
     async for message in channel.history(
@@ -78,19 +87,24 @@ async def _collect_summary_messages(
     return transcript, None
 
 
-def register(bot, summary_service, settings: Settings, summary_date_range):
+def register(
+    bot: discord.Bot,
+    summary_service: SummaryOpenAI,
+    settings: Settings,
+    summary_date_range: Callable[[str, str], tuple[datetime, datetime]],
+) -> None:
     general = bot.create_group(
-        "general", "General bot commands", guild_ids=settings.guild_ids
+        "general", "General bot commands", guild_ids=list(settings.guild_ids)
     )
 
     @general.command(name="hello", description="Say hello")
-    async def hello(ctx: discord.ApplicationContext):
+    async def hello(ctx: discord.ApplicationContext) -> None:
         await MessageFormatting.send_response(ctx, "Hi")
 
     @general.command(name="summarize", description="Summarize a channel")
     async def summarize(
         ctx: discord.ApplicationContext, start: str, end: str, channel_name: str
-    ):
+    ) -> None:
         start_date, end_date, error = _validate_summary_dates(
             start, end, summary_date_range, settings
         )
@@ -102,21 +116,15 @@ def register(bot, summary_service, settings: Settings, summary_date_range):
 
         channel = _find_channel(ctx, channel_name)
         if channel is None:
-            await MessageFormatting.send_response(
-                ctx,
-                f"I couldn't find the channel `{channel_name}`.",
-                allowed_mentions=discord.AllowedMentions.none(),
-            )
-            return
+            raise ResourceNotFound(f"I couldn't find the channel `{channel_name}`.")
 
+        if not isinstance(ctx.author, discord.Member):
+            raise AccessDenied("This command must be used in a guild.")
         permissions = channel.permissions_for(ctx.author)
         if not (permissions.view_channel and permissions.read_message_history):
-            await MessageFormatting.send_response(
-                ctx,
-                "You do not have permission to view this channel or its history.",
-                allowed_mentions=discord.AllowedMentions.none(),
+            raise AccessDenied(
+                "You do not have permission to view this channel or its history."
             )
-            return
 
         await ctx.defer()
         messages, error = await _collect_summary_messages(
@@ -147,7 +155,11 @@ def register(bot, summary_service, settings: Settings, summary_date_range):
     @general.command(
         name="reminder", description="I will remind you to check something"
     )
-    async def reminder(ctx: discord.ApplicationContext, seconds: int, message: str):
+    async def reminder(
+        ctx: discord.ApplicationContext, seconds: int, message: str
+    ) -> None:
+        if seconds < 0:
+            raise InvalidInput("Reminder delay cannot be negative.")
         await MessageFormatting.send_response(
             ctx,
             f"Okay, I will remind you in {seconds} seconds.",

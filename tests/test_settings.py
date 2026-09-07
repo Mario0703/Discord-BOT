@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from bot.errors import ConfigurationError
-from bot.Settings.settings import (
+from bot.settings.settings import (
     Settings,
     _check_api_keys_settings,
     load_settings,

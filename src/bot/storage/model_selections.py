@@ -5,7 +5,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from bot.openai_models import MODEL_REASONING_LEVELS
-from bot.Settings.settings import Settings
+from bot.settings.settings import Settings
 
 
 @dataclass
@@ -23,19 +23,17 @@ def resolve_model_settings(
 
     model_id = default_model
 
-    has_valid_model = (
-        selection is not None and selection.model_name in MODEL_REASONING_LEVELS
-    )
-    if has_valid_model:
+    if (
+        selection is not None
+        and selection.model_name is not None
+        and selection.model_name in MODEL_REASONING_LEVELS
+    ):
         model_id = selection.model_name
 
-    supported_levels = MODEL_REASONING_LEVELS.get(model_id, [])
-    reasoning_level = default_reasoning
+    supported_levels = MODEL_REASONING_LEVELS.get(model_id, ())
+    reasoning_level: str | None = default_reasoning
 
-    has_valid_reasoning = (
-        selection is not None and selection.reasoning_level in supported_levels
-    )
-    if has_valid_reasoning:
+    if selection is not None and selection.reasoning_level in supported_levels:
         reasoning_level = selection.reasoning_level
     elif reasoning_level not in supported_levels:
         reasoning_level = None
@@ -46,7 +44,7 @@ def resolve_model_settings(
 class ModelSelectionStore:
     """Persist each Discord user's OpenAI model selection in a JSON file."""
 
-    def __init__(self, file_path: str | Path = "model_selections.json"):
+    def __init__(self, file_path: str | Path = "model_selections.json") -> None:
         self.file_path = Path(file_path)
         self.selections = self._load()
 
@@ -80,11 +78,3 @@ class ModelSelectionStore:
     ) -> None:
         self.selections[str(user_id)] = ModelSelection(model_name, reasoning_level)
         self._save()
-
-    def remove_selection(self, user_id: str | int) -> ModelSelection | None:
-        selection = self.selections.pop(str(user_id), None)
-
-        if selection is not None:
-            self._save()
-
-        return selection
