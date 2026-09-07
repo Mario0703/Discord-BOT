@@ -39,7 +39,6 @@ class AssistantService:
         self,
         prompt: str,
         user_id: str | int,
-        *,
         workflow: str = "assistant",
     ) -> str:
         """Return the final text for a stateful user conversation."""
@@ -54,7 +53,6 @@ class AssistantService:
         self,
         prompt: str,
         user_id: str | int,
-        *,
         workflow: str = "assistant",
     ) -> Any:
         """Create a response in a workflow-specific user conversation."""
@@ -106,7 +104,6 @@ class AssistantService:
         self,
         prompt: str,
         user_id: str | int,
-        *,
         allow_tools: bool = False,
     ) -> str:
         """Return text without reading or writing conversation history."""
@@ -125,7 +122,6 @@ class AssistantService:
         prompt: str,
         model_id: str,
         reasoning_level: str | None,
-        *,
         user_id: str | int | None = None,
         allow_tools: bool = True,
     ) -> Any:
@@ -142,7 +138,6 @@ class AssistantService:
     async def clear_conversation(
         self,
         user_id: str | int,
-        *,
         workflow: str = "assistant",
     ) -> bool:
         conversation_id = self.conversations.get_conversation(user_id, workflow)
@@ -155,7 +150,6 @@ class AssistantService:
 
     async def _complete_response(
         self,
-        *,
         prompt: str,
         model_id: str,
         reasoning_level: str | None,
@@ -211,7 +205,6 @@ class AssistantService:
 
     async def _create_initial_response(
         self,
-        *,
         prompt: str,
         model_id: str,
         reasoning_level: str | None,
