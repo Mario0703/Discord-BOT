@@ -5,7 +5,7 @@ import discord
 
 from bot.tools.games_deal import GamesDealTool
 
-from .openai_client_impl import OpenAiCLientImpl
+from ..openai_client_impl import OpenAiCLientImpl
 from .prompts import ranking_prompt
 
 

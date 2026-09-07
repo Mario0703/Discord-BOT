@@ -4,11 +4,11 @@ from bot.Settings.settings import Settings
 
 from .command_categories.registration import register_pycord_command
 from .modules.client.ElevenLabs.elevenlabs import ElevenLabsClient
-from .modules.client.openAI.code_review import CodeReview
+from .modules.client.openAI.toolCalls.code_review import CodeReview
 from .modules.client.openAI.openai_client_impl import OpenAiCLientImpl
-from .modules.client.openAI.summary import SummaryOpenAI
-from .modules.client.openAI.top_deals import TopDealsService
-from .modules.client.openAI.transcript import Transcript
+from .modules.client.openAI.toolCalls.summary import SummaryOpenAI
+from .modules.client.openAI.toolCalls.top_deals import TopDealsService
+from .modules.client.openAI.toolCalls.transcript import Transcript
 from .storage.model_selections import ModelSelectionStore
 from .storage.token_usage import TokenUsage
 from .storage.user_conversations import UserConversations

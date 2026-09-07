@@ -1,4 +1,4 @@
-from .openai_client_impl import OpenAiCLientImpl
+from ..openai_client_impl import OpenAiCLientImpl
 
 
 class Transcript:

@@ -15,7 +15,7 @@ from ....storage.model_selections import (
 )
 from ....storage.token_usage import TokenUsage
 from ....storage.user_conversations import UserConversations
-from .prompts import assistant_prompt
+from .toolCalls.prompts import assistant_prompt
 
 
 class OpenAiCLientImpl:

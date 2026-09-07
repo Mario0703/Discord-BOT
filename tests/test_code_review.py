@@ -2,9 +2,9 @@ import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock, Mock
 
-from bot.modules.client.openAI.code_review import CodeReview
+from bot.modules.client.openAI.toolCalls.code_review import CodeReview
 from bot.modules.client.openAI.openai_client_impl import OpenAiCLientImpl
-from bot.modules.client.openAI.prompts import code_review_prompt
+from bot.modules.client.openAI.toolCalls.prompts import code_review_prompt
 from bot.storage.model_selections import ModelSelectionStore
 from bot.storage.token_usage import TokenUsage
 from bot.storage.user_conversations import UserConversations

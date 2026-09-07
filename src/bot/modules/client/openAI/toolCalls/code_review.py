@@ -1,6 +1,6 @@
 import discord
 
-from .openai_client_impl import OpenAiCLientImpl
+from ..openai_client_impl import OpenAiCLientImpl
 from .prompts import code_review_prompt
 
 
