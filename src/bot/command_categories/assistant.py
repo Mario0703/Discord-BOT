@@ -6,7 +6,13 @@ from bot.Settings.settings import Settings
 from ..tools.message_formatting import MessageFormatting
 
 
-def register(bot, openai_service, top_deals_service, settings: Settings):
+def register(
+    bot,
+    assistant_service,
+    model_preferences,
+    top_deals_service,
+    settings: Settings,
+):
     assistant = bot.create_group(
         "assistant", "AI assistant commands", guild_ids=settings.guild_ids
     )
@@ -15,7 +21,7 @@ def register(bot, openai_service, top_deals_service, settings: Settings):
     async def ask_openai(ctx: discord.ApplicationContext, question: str):
         await ctx.defer()
         try:
-            answer = await openai_service.generate_repsone_from_openAI(question, ctx)
+            answer = await assistant_service.get_response(question, ctx.author.id)
         except ToolCallLimitError as error:
             await MessageFormatting.send_followup(ctx, str(error))
             return
@@ -27,7 +33,7 @@ def register(bot, openai_service, top_deals_service, settings: Settings):
         name="clear_conversation", description="Clear your Luna conversation history"
     )
     async def clear_conversation(ctx: discord.ApplicationContext):
-        cleared = await openai_service.clear_conversation(ctx)
+        cleared = await assistant_service.clear_conversation(ctx.author.id)
         response_message = ""
 
         if cleared:
@@ -43,7 +49,7 @@ def register(bot, openai_service, top_deals_service, settings: Settings):
     async def deals(ctx: discord.ApplicationContext):
         await ctx.defer()
         try:
-            text = await top_deals_service.get_top_steam_deals(ctx)
+            text = await top_deals_service.get_top_steam_deals(ctx.author.id)
         except (OptionalFeatureUnavailableError, ToolCallLimitError) as error:
             await MessageFormatting.send_followup(ctx, str(error))
             return
@@ -54,7 +60,7 @@ def register(bot, openai_service, top_deals_service, settings: Settings):
     @assistant.command(name="model", description="List the models available for openAI")
     async def list_models(ctx: discord.ApplicationContext):
         await ctx.defer()
-        models = await openai_service.get_model_info()
+        models = await model_preferences.get_model_info()
 
         if not models:
             await MessageFormatting.send_followup(
@@ -90,7 +96,11 @@ def register(bot, openai_service, top_deals_service, settings: Settings):
         reasoning_level: str,
     ):
         await ctx.defer()
-        selection = openai_service.set_user_model(ctx, model_id, reasoning_level)
+        selection = model_preferences.set_user_model(
+            ctx.author.id,
+            model_id,
+            reasoning_level,
+        )
 
         if selection is not None:
             await MessageFormatting.send_followup(
@@ -111,14 +121,14 @@ def register(bot, openai_service, top_deals_service, settings: Settings):
         description="Show your selected OpenAI model and reasoning level",
     )
     async def show_my_model(ctx: discord.ApplicationContext):
-        user_id = str(ctx.author.id)
-        selection = openai_service.model_selection_store.selections.get(user_id)
+        selection = model_preferences.get_selection(ctx.author.id)
 
         if selection is None:
+            model_id, reasoning_level = model_preferences.resolve(ctx.author.id)
             await MessageFormatting.send_response(
                 ctx,
                 "You have not selected a model. The bot is using the default: "
-                "`gpt-5.6-luna` with `medium` reasoning.",
+                f"`{model_id}` with `{reasoning_level}` reasoning.",
                 allowed_mentions=discord.AllowedMentions.none(),
             )
             return

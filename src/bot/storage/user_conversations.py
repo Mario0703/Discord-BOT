@@ -3,33 +3,48 @@ from pathlib import Path
 
 
 class UserConversations:
-    def __init__(self, file_path="user_conversations.json"):
+    def __init__(self, file_path: str | Path = "user_conversations.json") -> None:
         self.file_path = Path(file_path)
         self.conversations = self._load()
 
-    def _load(self):
+    def _load(self) -> dict[str, str]:
         if not self.file_path.exists():
             return {}
 
         with self.file_path.open("r", encoding="utf-8") as file:
             return json.load(file)
 
-    def _save(self):
+    def _save(self) -> None:
         with self.file_path.open("w", encoding="utf-8") as file:
             json.dump(self.conversations, file, indent=2)
 
-    def get_conversation(self, user_id):
+    @staticmethod
+    def _key(user_id: str | int, workflow: str) -> str:
         user_id = str(user_id)
-        return self.conversations.get(user_id)
+        return user_id if workflow == "assistant" else f"{workflow}:{user_id}"
 
-    def update_conversation(self, user_id, conversation_id):
-        user_id = str(user_id)
-        self.conversations[user_id] = conversation_id
+    def get_conversation(
+        self,
+        user_id: str | int,
+        workflow: str = "assistant",
+    ) -> str | None:
+        return self.conversations.get(self._key(user_id, workflow))
+
+    def update_conversation(
+        self,
+        user_id: str | int,
+        conversation_id: str,
+        workflow: str = "assistant",
+    ) -> None:
+        self.conversations[self._key(user_id, workflow)] = conversation_id
         self._save()
 
-    def remove_conversation(self, user_id):
-        user_id = str(user_id)
-        conversation_id = self.conversations.pop(user_id, None)
+    def remove_conversation(
+        self,
+        user_id: str | int,
+        workflow: str = "assistant",
+    ) -> str | None:
+        conversation_id = self.conversations.pop(self._key(user_id, workflow), None)
 
         if conversation_id is not None:
             self._save()

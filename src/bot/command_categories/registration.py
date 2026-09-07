@@ -34,7 +34,9 @@ def summary_date_range(start: str, end: str) -> tuple[datetime, datetime]:
 def register_pycord_command(
     bot: discord.Bot,
     settings: Settings,
-    openai_service,
+    assistant_service,
+    model_preferences,
+    token_usage,
     top_deals_service,
     code_review_service,
     summary_service,
@@ -42,10 +44,20 @@ def register_pycord_command(
     elevenlabs_service,
 ):
 
-    register_assistant(bot, openai_service, top_deals_service, settings)
+    register_assistant(
+        bot,
+        assistant_service,
+        model_preferences,
+        top_deals_service,
+        settings,
+    )
     register_general(bot, summary_service, settings, summary_date_range)
     register_technical(
-        bot, openai_service, code_review_service, settings, format_code_review
+        bot,
+        token_usage,
+        code_review_service,
+        settings,
+        format_code_review,
     )
     register_voice(
         bot,
